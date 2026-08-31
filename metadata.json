@@ -1,0 +1,6 @@
+{
+  "name": "NestFinder",
+  "description": "PG, Private Hostel, and Rental House Finder platform with tenant pass, owner listing verification, and Supabase integration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,917 @@
+<!-- NestFinder Standalone Single-File Web App -->
+<!-- This file can be deployed directly to Netlify by dragging and dropping -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NestFinder - PG, Private Hostels & Rent Houses</title>
+  <meta name="description" content="Find verified PGs, private hostels, and rental houses with direct owner contacts and instant ₹99 pass.">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .contact-blurred { filter: blur(4px); user-select: none; pointer-events: none; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
+
+  <!-- TOP ANNOUNCEMENT BAR -->
+  <div class="bg-gradient-to-r from-indigo-700 via-indigo-600 to-blue-600 text-white text-xs sm:text-sm py-2 px-4 text-center font-medium shadow-sm flex items-center justify-center gap-2">
+    <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+    <span>Zero Brokerage Verified Listings • Student & Tenant Pass for ₹99 Only • Direct WhatsApp & Calls</span>
+  </div>
+
+  <!-- MAIN HEADER & BRANDING -->
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
+      <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('explore')">
+        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-200">
+          <i data-lucide="home" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-xl sm:text-2xl font-black tracking-tight text-slate-900">Nest<span class="text-indigo-600">Finder</span></span>
+            <span class="hidden sm:inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-indigo-100 text-indigo-700 rounded-full">100% Direct</span>
+          </div>
+          <p class="text-xs font-semibold text-slate-700">PGs, Private Hostels & Rent Houses</p>
+        </div>
+      </div>
+
+      <!-- Navigation & Action Buttons -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <button id="nav-explore-btn" onclick="switchTab('explore')" class="px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold transition bg-indigo-50 text-indigo-700">
+          Explore Listings
+        </button>
+        <button id="nav-owner-btn" onclick="switchTab('owner')" class="px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold transition text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-1.5">
+          <i data-lucide="plus-circle" class="w-4 h-4 text-indigo-600"></i>
+          <span class="hidden xs:inline">List Property</span> (Owner)
+        </button>
+        <button id="nav-pass-btn" onclick="openTenantPassModal()" class="px-3 sm:px-4 py-2 rounded-lg text-sm font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-sm flex items-center gap-1.5">
+          <i data-lucide="key" class="w-4 h-4"></i>
+          <span id="pass-btn-text">Unlock Contacts (₹99)</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO SECTION -->
+  <section class="bg-gradient-to-b from-indigo-900 via-slate-900 to-slate-900 text-white py-10 sm:py-16 px-4 relative overflow-hidden">
+    <div class="max-w-5xl mx-auto text-center relative z-10">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs sm:text-sm font-semibold mb-4">
+        <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
+        Direct Owner Connect • No Middlemen • No Commission
+      </div>
+      <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight mb-4 text-white">
+        Find Your Perfect <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-amber-300">PG, Hostel or Rental Flat</span>
+      </h1>
+      <p class="text-slate-300 text-sm sm:text-lg max-w-2xl mx-auto mb-8">
+        Search hundreds of verified student hostels, single/double sharing PGs, and family rental apartments. Unlock direct owner calls & WhatsApp with ₹99 one-time pass.
+      </p>
+
+      <!-- Search & Filters Bar -->
+      <div class="bg-white p-3 sm:p-4 rounded-2xl shadow-xl max-w-4xl mx-auto text-slate-800 grid grid-cols-1 sm:grid-cols-4 gap-3 text-left">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">City / Locality</label>
+          <input id="filter-city" type="text" placeholder="e.g. Bangalore, Pune, Kota" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 placeholder:text-slate-600" oninput="applyFilters()">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Property Type</label>
+          <select id="filter-type" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900" onchange="applyFilters()">
+            <option value="ALL">All Types</option>
+            <option value="Boys PG">Boys PG</option>
+            <option value="Girls PG">Girls PG</option>
+            <option value="Co-ed PG">Co-ed PG</option>
+            <option value="Private Hostel">Private Hostel</option>
+            <option value="1 BHK Flat">1 BHK Flat</option>
+            <option value="2 BHK Flat">2 BHK Flat</option>
+            <option value="3 BHK Flat">3 BHK Flat</option>
+            <option value="Independent House">Independent House</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Max Budget (₹/mo)</label>
+          <select id="filter-budget" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900" onchange="applyFilters()">
+            <option value="999999">Any Budget</option>
+            <option value="8000">Under ₹8,000</option>
+            <option value="12000">Under ₹12,000</option>
+            <option value="18000">Under ₹18,000</option>
+            <option value="25000">Under ₹25,000</option>
+          </select>
+        </div>
+        <div class="flex items-end">
+          <button onclick="resetFilters()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-3 rounded-lg text-sm transition flex items-center justify-center gap-1.5">
+            <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Reset
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN CONTENT CONTAINER -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+
+    <!-- VIEW 1: EXPLORE PROPERTY LISTINGS -->
+    <div id="view-explore" class="block">
+      
+      <!-- Tenant Pass Status Card -->
+      <div id="tenant-pass-banner" class="mb-8 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+        <div class="flex items-start sm:items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-amber-200">
+            <i data-lucide="lock" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-900 text-base">Owner Contact Numbers are Locked</h3>
+            <p class="text-xs sm:text-sm text-slate-600">Get unlimited direct owner phone numbers & WhatsApp access across all listings with a one-time ₹99 Student/Tenant pass.</p>
+          </div>
+        </div>
+        <button onclick="openTenantPassModal()" class="w-full sm:w-auto px-6 py-2.5 rounded-xl font-bold text-sm bg-amber-500 hover:bg-amber-600 text-white shadow-md transition flex items-center justify-center gap-2 shrink-0">
+          <i data-lucide="zap" class="w-4 h-4"></i> Unlock Now (₹99)
+        </button>
+      </div>
+
+      <!-- Verified Pass Active Banner (hidden by default) -->
+      <div id="tenant-pass-unlocked-banner" class="hidden mb-8 p-4 sm:p-5 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-between gap-4 shadow-sm">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0">
+            <i data-lucide="check-circle" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-emerald-900 text-base">Tenant Pass Active & Verified</span>
+              <span class="px-2 py-0.5 text-[11px] font-bold bg-emerald-200 text-emerald-800 rounded-full">UTR: <span id="active-pass-utr"></span></span>
+            </div>
+            <p class="text-xs text-emerald-700">All owner contact numbers, WhatsApp chats & appointment scheduling are unlocked!</p>
+          </div>
+        </div>
+        <div class="text-xs font-semibold text-emerald-800 bg-white px-3 py-1.5 rounded-lg border border-emerald-200">
+          Unlimited Access
+        </div>
+      </div>
+
+      <!-- Listings Grid Header -->
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-bold text-slate-900">Verified Available Spaces</h2>
+          <p class="text-xs sm:text-sm text-slate-500">Real verified properties with complete 4-photo previews</p>
+        </div>
+        <span id="listings-count" class="text-xs sm:text-sm font-semibold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
+          Loading...
+        </span>
+      </div>
+
+      <!-- Properties Grid -->
+      <div id="properties-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Injected via JavaScript -->
+      </div>
+    </div>
+
+    <!-- VIEW 2: OWNER PROPERTY LISTING PORTAL -->
+    <div id="view-owner" class="hidden max-w-4xl mx-auto">
+      <div class="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
+        <!-- Header -->
+        <div class="bg-slate-900 text-white p-6 sm:p-8">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-semibold mb-3">
+            <i data-lucide="shield" class="w-3.5 h-3.5 text-indigo-400"></i>
+            Property Owner Registration
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-white">List Your PG, Hostel, or Rental House</h2>
+          <p class="text-slate-300 text-sm mt-1">Connect directly with verified students and working professionals. Zero commissions.</p>
+        </div>
+
+        <form id="owner-listing-form" onsubmit="handleOwnerFormSubmit(event)" class="p-6 sm:p-8 space-y-6">
+          <!-- Step 1: Basic Information -->
+          <div>
+            <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2 mb-4 pb-2 border-b border-slate-100">
+              <span class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs flex items-center justify-center font-bold">1</span>
+              Property & Location Details
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Property / Building Name *</label>
+                <input required type="text" id="owner-prop-title" placeholder="e.g. Balaji Luxury Boys PG" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Property Type *</label>
+                <select required id="owner-prop-type" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                  <option value="Boys PG">Boys PG</option>
+                  <option value="Girls PG">Girls PG</option>
+                  <option value="Co-ed PG">Co-ed PG</option>
+                  <option value="Private Hostel">Private Hostel</option>
+                  <option value="1 BHK Flat">1 BHK Flat</option>
+                  <option value="2 BHK Flat">2 BHK Flat</option>
+                  <option value="3 BHK Flat">3 BHK Flat</option>
+                  <option value="Independent House">Independent House</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">City *</label>
+                <input required type="text" id="owner-prop-city" placeholder="e.g. Bangalore, Hyderabad, Pune, Kota" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Landmark / Area</label>
+                <input type="text" id="owner-prop-landmark" placeholder="e.g. Near Metro Station / College Gate" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              </div>
+              <div class="sm:col-span-2">
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Complete Location / Address *</label>
+                <textarea required id="owner-prop-address" rows="2" placeholder="Full street address with building number and pin code" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2: Rent & Details -->
+          <div>
+            <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2 mb-4 pb-2 border-b border-slate-100">
+              <span class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs flex items-center justify-center font-bold">2</span>
+              Pricing & Occupancy
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Monthly Rent (₹) *</label>
+                <input required type="number" id="owner-prop-rent" placeholder="8500" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Security Deposit (₹) *</label>
+                <input required type="number" id="owner-prop-deposit" placeholder="8500" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Sharing / Layout *</label>
+                <select required id="owner-prop-sharing" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                  <option value="Single">Single Room</option>
+                  <option value="Double">Double Sharing</option>
+                  <option value="Triple">Triple Sharing</option>
+                  <option value="Entire Flat / House">Entire Flat / House</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 3: Owner Contacts -->
+          <div>
+            <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2 mb-4 pb-2 border-b border-slate-100">
+              <span class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs flex items-center justify-center font-bold">3</span>
+              Owner Contact Information
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Owner / Caretaker Name *</label>
+                <input required type="text" id="owner-name" placeholder="e.g. Ramesh Reddy" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Phone Number (For Calling) *</label>
+                <input required type="tel" id="owner-phone" placeholder="e.g. 9845012345" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">WhatsApp Number *</label>
+                <input required type="tel" id="owner-whatsapp" placeholder="e.g. 9845012345" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 4: Exactly 4 Photo Uploads -->
+          <div>
+            <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
+              <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <span class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs flex items-center justify-center font-bold">4</span>
+                Exactly 4 Property Photos *
+              </h3>
+              <button type="button" onclick="fillSamplePhotos()" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 underline">
+                Auto-fill Sample Photos
+              </button>
+            </div>
+            
+            <p class="text-xs text-slate-500 mb-3">Upload exactly 4 clear photos (Room, Bathroom, Hall/Kitchen, Exterior or Balcony).</p>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <!-- Photo 1 -->
+              <div class="border-2 border-dashed border-slate-300 rounded-2xl p-3 text-center bg-slate-50 hover:bg-slate-100 transition relative">
+                <div class="text-xs font-bold text-slate-700 mb-2">Photo 1: Main Room / Bed</div>
+                <img id="preview-img-0" src="https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=400&q=80" class="w-full h-28 object-cover rounded-lg mb-2 shadow-sm">
+                <input type="file" accept="image/*" onchange="handlePhotoUpload(event, 0)" class="text-[11px] w-full text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                <input type="hidden" id="photo-url-0" value="https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=800&q=80">
+              </div>
+              <!-- Photo 2 -->
+              <div class="border-2 border-dashed border-slate-300 rounded-2xl p-3 text-center bg-slate-50 hover:bg-slate-100 transition relative">
+                <div class="text-xs font-bold text-slate-700 mb-2">Photo 2: Living / Common</div>
+                <img id="preview-img-1" src="https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=400&q=80" class="w-full h-28 object-cover rounded-lg mb-2 shadow-sm">
+                <input type="file" accept="image/*" onchange="handlePhotoUpload(event, 1)" class="text-[11px] w-full text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                <input type="hidden" id="photo-url-1" value="https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=800&q=80">
+              </div>
+              <!-- Photo 3 -->
+              <div class="border-2 border-dashed border-slate-300 rounded-2xl p-3 text-center bg-slate-50 hover:bg-slate-100 transition relative">
+                <div class="text-xs font-bold text-slate-700 mb-2">Photo 3: Washroom / Kitchen</div>
+                <img id="preview-img-2" src="https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=400&q=80" class="w-full h-28 object-cover rounded-lg mb-2 shadow-sm">
+                <input type="file" accept="image/*" onchange="handlePhotoUpload(event, 2)" class="text-[11px] w-full text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                <input type="hidden" id="photo-url-2" value="https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=800&q=80">
+              </div>
+              <!-- Photo 4 -->
+              <div class="border-2 border-dashed border-slate-300 rounded-2xl p-3 text-center bg-slate-50 hover:bg-slate-100 transition relative">
+                <div class="text-xs font-bold text-slate-700 mb-2">Photo 4: Building / Entrance</div>
+                <img id="preview-img-3" src="https://images.unsplash.com/photo-1507089947368-19c1da9775ae?auto=format&fit=crop&w=400&q=80" class="w-full h-28 object-cover rounded-lg mb-2 shadow-sm">
+                <input type="file" accept="image/*" onchange="handlePhotoUpload(event, 3)" class="text-[11px] w-full text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                <input type="hidden" id="photo-url-3" value="https://images.unsplash.com/photo-1507089947368-19c1da9775ae?auto=format&fit=crop&w=800&q=80">
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 5: Facilities Checkboxes -->
+          <div>
+            <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2 mb-4 pb-2 border-b border-slate-100">
+              <span class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs flex items-center justify-center font-bold">5</span>
+              Available Facilities & Amenities
+            </h3>
+            <div id="facilities-container" class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              <!-- Facilities injected via script -->
+            </div>
+          </div>
+
+          <!-- Step 6: ₹99 Listing Fee & UTR Verification -->
+          <div class="bg-indigo-50/70 border border-indigo-200 rounded-2xl p-6">
+            <h3 class="text-lg font-bold text-indigo-950 flex items-center gap-2 mb-3">
+              <span class="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center font-bold">6</span>
+              Owner Listing Fee (₹99 via UPI QR Code)
+            </h3>
+            <p class="text-xs text-indigo-800 mb-4">To ensure 100% verified genuine properties and prevent fake spam listings, pay a one-time ₹99 listing verification fee.</p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 items-center">
+              <div class="bg-white p-4 rounded-xl border border-indigo-200 text-center shadow-sm">
+                <!-- QR Code representation -->
+                <div class="w-36 h-36 mx-auto bg-slate-900 p-2 rounded-lg flex items-center justify-center text-white relative">
+                  <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=upi://pay?pa=nestfinder@upi&pn=NestFinder%20Owner%20Listing&am=99&cu=INR" alt="UPI QR Code" class="w-full h-full object-contain rounded bg-white p-1">
+                </div>
+                <span class="inline-block mt-2 text-[11px] font-bold text-slate-700">Scan & Pay ₹99 via GPay / PhonePe / Paytm</span>
+                <p class="text-[10px] text-slate-500 font-mono">UPI ID: nestfinder@upi</p>
+              </div>
+
+              <div class="sm:col-span-2 space-y-4">
+                <div>
+                  <label class="block text-xs font-bold text-slate-800 uppercase mb-1">Enter 12-Digit UPI UTR / Transaction ID *</label>
+                  <input required type="text" id="owner-listing-utr" placeholder="e.g. 423189098719" maxlength="16" class="w-full px-3.5 py-2.5 text-sm bg-white border border-indigo-300 rounded-xl focus:ring-2 focus:ring-indigo-600 focus:outline-none font-mono">
+                  <span class="text-[11px] text-indigo-700 mt-1 block">You will find the 12-digit UTR in your payment receipt on GPay, PhonePe, or Paytm.</span>
+                </div>
+
+                <div class="flex items-center gap-3 pt-2">
+                  <button type="submit" class="w-full py-3 px-6 rounded-xl font-bold text-sm bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 transition flex items-center justify-center gap-2">
+                    <i data-lucide="check-circle" class="w-5 h-5"></i>
+                    Verify UTR & Publish Listing
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </form>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- TENANT ₹99 PASS MODAL -->
+  <div id="tenant-modal" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full shadow-2xl overflow-hidden border border-slate-200">
+      
+      <!-- Modal Header -->
+      <div class="bg-gradient-to-r from-amber-500 to-orange-600 p-6 text-white relative">
+        <button onclick="closeTenantPassModal()" class="absolute top-4 right-4 text-white/80 hover:text-white bg-black/10 rounded-full p-1.5 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-bold mb-2">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> One-Time ₹99 Student Pass
+        </div>
+        <h3 class="text-2xl font-black text-white">Unlock All Owner Contacts</h3>
+        <p class="text-amber-100 text-xs mt-1">Direct phone calls, WhatsApp chat, and scheduled visits with zero brokerage.</p>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 space-y-5">
+        
+        <!-- Registration Form -->
+        <div id="tenant-step-form" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Your Full Name *</label>
+            <input required type="text" id="tenant-reg-name" placeholder="e.g. Rahul Sharma" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">WhatsApp Phone Number *</label>
+            <input required type="tel" id="tenant-reg-whatsapp" placeholder="e.g. 9876543210" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none">
+          </div>
+
+          <!-- Payment QR Area -->
+          <div class="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 text-center">
+            <div class="text-xs font-bold text-slate-800 uppercase mb-2">Pay ₹99 via UPI QR Code</div>
+            <div class="w-36 h-36 mx-auto bg-white p-2 rounded-xl border border-amber-300 shadow-sm flex items-center justify-center">
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=upi://pay?pa=nestfinder@upi&pn=NestFinder%20Student%20Pass&am=99&cu=INR" alt="UPI QR Code" class="w-full h-full object-contain">
+            </div>
+            <p class="text-xs font-semibold text-slate-700 mt-2">Scan with GPay, PhonePe, Paytm, or CRED</p>
+            <p class="text-[11px] text-slate-500 font-mono">UPI ID: <span class="font-bold text-slate-800">nestfinder@upi</span></p>
+          </div>
+
+          <!-- UTR input -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Enter 12-Digit Payment UTR / Txn ID *</label>
+            <input required type="text" id="tenant-reg-utr" placeholder="e.g. 423189098799" maxlength="16" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none font-mono">
+            <span class="text-[11px] text-slate-500 mt-1 block">Check your banking / UPI app transaction receipt for the 12-digit UTR.</span>
+          </div>
+
+          <button onclick="handleTenantPassPayment()" class="w-full py-3.5 px-6 rounded-xl font-black text-sm bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-lg shadow-amber-200 transition flex items-center justify-center gap-2">
+            <i data-lucide="unlock" class="w-4 h-4"></i>
+            Verify UTR & Unlock All Contacts Now
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- APPOINTMENT BOOKING MODAL -->
+  <div id="appointment-modal" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full shadow-2xl overflow-hidden border border-slate-200">
+      <div class="bg-slate-900 text-white p-6 relative">
+        <button onclick="closeAppointmentModal()" class="absolute top-4 right-4 text-white/80 hover:text-white bg-white/10 rounded-full p-1.5 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+        <h3 class="text-xl font-bold">Schedule Property Visit</h3>
+        <p id="appoint-prop-title" class="text-xs text-slate-300 mt-1 truncate">Property Title</p>
+      </div>
+      <form onsubmit="handleBookAppointment(event)" class="p-6 space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Preferred Visit Date *</label>
+          <input required type="date" id="appoint-date" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Time Slot *</label>
+          <select required id="appoint-slot" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            <option value="Morning (9:00 AM - 12:00 PM)">Morning (9:00 AM - 12:00 PM)</option>
+            <option value="Afternoon (12:00 PM - 4:00 PM)">Afternoon (12:00 PM - 4:00 PM)</option>
+            <option value="Evening (4:00 PM - 8:00 PM)">Evening (4:00 PM - 8:00 PM)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Notes / Questions for Owner</label>
+          <textarea id="appoint-notes" rows="2" placeholder="e.g. Inquiring about food timings or parking availability" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+        </div>
+        <button type="submit" class="w-full py-3 px-6 rounded-xl font-bold text-sm bg-indigo-600 hover:bg-indigo-700 text-white shadow-md transition">
+          Confirm Appointment Request
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- PHOTO GALLERY LIGHTBOX MODAL -->
+  <div id="gallery-modal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="max-w-4xl w-full text-white relative">
+      <button onclick="closeGalleryModal()" class="absolute -top-12 right-0 text-white hover:text-slate-300 p-2">
+        <i data-lucide="x" class="w-6 h-6"></i>
+      </button>
+      <h3 id="gallery-title" class="text-lg font-bold mb-3 truncate">Property Photos</h3>
+      <div class="grid grid-cols-2 gap-3 max-h-[75vh] overflow-y-auto p-1">
+        <img id="gal-img-0" src="" class="w-full h-64 object-cover rounded-xl border border-slate-700">
+        <img id="gal-img-1" src="" class="w-full h-64 object-cover rounded-xl border border-slate-700">
+        <img id="gal-img-2" src="" class="w-full h-64 object-cover rounded-xl border border-slate-700">
+        <img id="gal-img-3" src="" class="w-full h-64 object-cover rounded-xl border border-slate-700">
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="bg-slate-900 text-slate-400 py-10 border-t border-slate-800 text-sm mt-auto">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 sm:grid-cols-3 gap-8">
+      <div>
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center">
+            <i data-lucide="home" class="w-5 h-5"></i>
+          </div>
+          <span class="text-xl font-bold text-white">Nest<span class="text-indigo-400">Finder</span></span>
+        </div>
+        <p class="text-xs text-slate-400">Direct PG, Private Hostel & Rental House discovery platform designed for students and working professionals.</p>
+      </div>
+      <div>
+        <h4 class="text-white font-bold text-xs uppercase tracking-wider mb-3">Quick Links</h4>
+        <ul class="space-y-2 text-xs">
+          <li><a href="javascript:void(0)" onclick="switchTab('explore')" class="hover:text-white">Explore Verified PGs</a></li>
+          <li><a href="javascript:void(0)" onclick="switchTab('owner')" class="hover:text-white">List Your Property (₹99 Fee)</a></li>
+          <li><a href="javascript:void(0)" onclick="openTenantPassModal()" class="hover:text-white">Get ₹99 Student Pass</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="text-white font-bold text-xs uppercase tracking-wider mb-3">Safety & Trust</h4>
+        <p class="text-xs text-slate-400">100% verified listings. Never transfer security deposits before visiting the property physically.</p>
+      </div>
+    </div>
+    <div class="max-w-7xl mx-auto px-4 mt-8 pt-6 border-t border-slate-800 text-xs text-center text-slate-500">
+      &copy; 2026 NestFinder. Zero Brokerage Housing Platform. Netlify & Supabase Ready.
+    </div>
+  </footer>
+
+  <!-- SCRIPT LOGIC -->
+  <script>
+    let properties = [
+      {
+        id: 'prop-101',
+        title: 'Sai Comforts Luxury Boys PG & Co-Living',
+        propertyType: 'Boys PG',
+        sharingType: 'Double',
+        address: 'Near Christ University Main Gate, Koramangala 4th Block',
+        city: 'Bengaluru',
+        landmark: 'Opposite Sony World Signal',
+        monthlyRent: 8500,
+        securityDeposit: 8500,
+        ownerName: 'Ramesh Reddy',
+        ownerPhone: '+919845012345',
+        ownerWhatsapp: '919845012345',
+        images: [
+          'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=800&q=80',
+          'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=800&q=80',
+          'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=800&q=80',
+          'https://images.unsplash.com/photo-1507089947368-19c1da9775ae?auto=format&fit=crop&w=800&q=80'
+        ],
+        facilities: ['Wi-Fi 200+ Mbps', '3-Times Meals Included', 'Air Conditioner (AC)', 'Geyser / Hot Water', 'Attached Washroom', 'Daily Housekeeping', 'RO Purified Water', 'Washing Machine'],
+        isVerified: true
+      },
+      {
+        id: 'prop-102',
+        title: 'Starlight Executive Girls Hostel & PG',
+        propertyType: 'Girls PG',
+        sharingType: 'Single',
+        address: 'Plot 42, Silicon Valley Layout, Madhapur',
+        city: 'Hyderabad',
+        landmark: 'Behind Durgam Cheruvu Metro Station',
+        monthlyRent: 11000,
+        securityDeposit: 11000,
+        ownerName: 'Sunita Rao',
+        ownerPhone: '+919989045678',
+        ownerWhatsapp: '919989045678',
+        images: [
+          'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80',
+          'https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=800&q=80',
+          'https://images.unsplash.com/photo-1540518614846-7ede433c4550?auto=format&fit=crop&w=800&q=80',
+          'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=80'
+        ],
+        facilities: ['24/7 Female Warden', 'Biometric Entry', 'Air Conditioner (AC)', 'Wi-Fi 200+ Mbps', '3-Times Meals Included', 'Power Backup / Inverter'],
+        isVerified: true
+      },
+      {
+        id: 'prop-103',
+        title: 'Green Meadows Spacious 2 BHK Semi-Furnished Flat',
+        propertyType: '2 BHK Flat',
+        sharingType: 'Entire Flat / House',
+        address: 'Flat 402, Tower B, Green Meadows, Hinjawadi Phase 1',
+        city: 'Pune',
+        landmark: 'Near Infosys Circle',
+        monthlyRent: 24000,
+        securityDeposit: 48000,
+        ownerName: 'Vikram Joshi',
+        ownerPhone: '+919765432109',
+        ownerWhatsapp: '919765432109',
+        images: [
+          'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80',
+          'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=800&q=80',
+          'https://images.unsplash.com/photo-1556912172-45b7abe8b7e1?auto=format&fit=crop&w=800&q=80',
+          'https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?auto=format&fit=crop&w=800&q=80'
+        ],
+        facilities: ['Gated Society', 'Two Wheeler Parking', 'Four Wheeler Parking', 'Power Backup / Inverter', 'Gym & Fitness Zone'],
+        isVerified: true
+      }
+    ];
+
+    let tenantPass = JSON.parse(localStorage.getItem('nestfinder_tenant_pass') || 'null');
+    let facilitiesList = [
+      'Wi-Fi 200+ Mbps', '3-Times Meals Included', 'Air Conditioner (AC)', 'Geyser / Hot Water',
+      'Attached Washroom', 'Daily Housekeeping', 'RO Purified Water', 'Washing Machine',
+      'CCTV & Security Guard', 'Biometric Entry', 'Power Backup / Inverter', 'Two Wheeler Parking'
+    ];
+    let selectedAppointmentProperty = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderFacilitiesCheckboxes();
+      renderPropertiesGrid();
+      updateTenantPassUI();
+      lucide.createIcons();
+    });
+
+    function switchTab(tab) {
+      const exploreView = document.getElementById('view-explore');
+      const ownerView = document.getElementById('view-owner');
+      const navExploreBtn = document.getElementById('nav-explore-btn');
+      const navOwnerBtn = document.getElementById('nav-owner-btn');
+
+      if (tab === 'explore') {
+        exploreView.classList.remove('hidden');
+        ownerView.classList.add('hidden');
+        navExploreBtn.className = "px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold transition bg-indigo-50 text-indigo-700";
+        navOwnerBtn.className = "px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold transition text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-1.5";
+      } else {
+        exploreView.classList.add('hidden');
+        ownerView.classList.remove('hidden');
+        navOwnerBtn.className = "px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold transition bg-indigo-50 text-indigo-700 flex items-center gap-1.5";
+        navExploreBtn.className = "px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold transition text-slate-600 hover:text-slate-900 hover:bg-slate-100";
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function renderFacilitiesCheckboxes() {
+      const container = document.getElementById('facilities-container');
+      if (!container) return;
+      container.innerHTML = facilitiesList.map(f => \`
+        <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 cursor-pointer text-xs font-medium text-slate-800">
+          <input type="checkbox" name="facilities" value="\${f}" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+          <span>\${f}</span>
+        </label>
+      \`).join('');
+    }
+
+    function renderPropertiesGrid() {
+      const grid = document.getElementById('properties-grid');
+      const countEl = document.getElementById('listings-count');
+      if (!grid) return;
+
+      const cityFilter = (document.getElementById('filter-city')?.value || '').toLowerCase().trim();
+      const typeFilter = document.getElementById('filter-type')?.value || 'ALL';
+      const budgetFilter = Number(document.getElementById('filter-budget')?.value || 999999);
+
+      const filtered = properties.filter(p => {
+        const matchesCity = !cityFilter || p.city.toLowerCase().includes(cityFilter) || p.address.toLowerCase().includes(cityFilter);
+        const matchesType = typeFilter === 'ALL' || p.propertyType === typeFilter;
+        const matchesBudget = p.monthlyRent <= budgetFilter;
+        return matchesCity && matchesType && matchesBudget;
+      });
+
+      if (countEl) countEl.innerText = \`Showing \${filtered.length} Properties\`;
+
+      const hasPaid = tenantPass && tenantPass.hasPaidPass;
+
+      grid.innerHTML = filtered.map(p => {
+        const facilitiesHtml = (p.facilities || []).slice(0, 4).map(f => \`
+          <span class="px-2 py-0.5 text-[10px] font-semibold bg-slate-100 text-slate-700 rounded-md">\${f}</span>
+        \`).join('');
+
+        return \`
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition overflow-hidden flex flex-col">
+            <div class="relative cursor-pointer group" onclick="openGalleryModal('\${p.id}')">
+              <img src="\${p.images[0]}" alt="\${p.title}" class="w-full h-48 sm:h-52 object-cover group-hover:scale-105 transition duration-300">
+              <div class="absolute top-3 left-3 flex gap-1.5">
+                <span class="px-2.5 py-1 text-xs font-bold bg-indigo-600 text-white rounded-lg shadow-sm">\${p.propertyType}</span>
+                <span class="px-2 py-1 text-xs font-semibold bg-black/60 backdrop-blur-sm text-white rounded-lg">\${p.sharingType}</span>
+              </div>
+              <div class="absolute bottom-3 right-3 bg-black/70 backdrop-blur-sm text-white text-[11px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1">
+                <i data-lucide="images" class="w-3.5 h-3.5"></i> 4 Photos
+              </div>
+            </div>
+
+            <div class="p-5 flex-1 flex flex-col justify-between">
+              <div>
+                <h3 class="font-bold text-base text-slate-900 leading-snug line-clamp-1 mb-1">\${p.title}</h3>
+                
+                <div class="flex items-center gap-1.5 text-xs text-slate-500 mb-3">
+                  <i data-lucide="map-pin" class="w-3.5 h-3.5 text-indigo-500 shrink-0"></i>
+                  <span class="line-clamp-1">\${p.address}, \${p.city}</span>
+                </div>
+
+                <div class="flex items-baseline gap-1 mb-3">
+                  <span class="text-xl font-black text-slate-900">₹\${p.monthlyRent.toLocaleString('en-IN')}</span>
+                  <span class="text-xs text-slate-500">/ month</span>
+                  <span class="text-[11px] text-slate-400 ml-2">Deposit: ₹\${p.securityDeposit.toLocaleString('en-IN')}</span>
+                </div>
+
+                <div class="flex flex-wrap gap-1.5 mb-4">
+                  \${facilitiesHtml}
+                </div>
+              </div>
+
+              <div class="pt-3 border-t border-slate-100">
+                \${hasPaid ? \`
+                  <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+                    <div class="flex items-center justify-between mb-2">
+                      <span class="text-xs font-bold text-emerald-900 flex items-center gap-1">
+                        <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-600"></i>
+                        Owner: \${p.ownerName}
+                      </span>
+                      <span class="text-[10px] bg-emerald-200 text-emerald-800 font-bold px-1.5 py-0.5 rounded">Unlocked</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                      <a href="tel:\${p.ownerPhone}" class="py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition">
+                        <i data-lucide="phone" class="w-3.5 h-3.5"></i> Call Owner
+                      </a>
+                      <a href="https://wa.me/\${p.ownerWhatsapp}?text=Hi%20\${encodeURIComponent(p.ownerName)},%20I%20saw%20your%20property%20\${encodeURIComponent(p.title)}%20on%20NestFinder.%20Is%20it%20available?" target="_blank" class="py-2 px-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition">
+                        <i data-lucide="message-circle" class="w-3.5 h-3.5"></i> WhatsApp
+                      </a>
+                    </div>
+                    <button onclick="openAppointmentModal('\${p.id}')" class="mt-2 w-full py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition">
+                      <i data-lucide="calendar" class="w-3.5 h-3.5 text-indigo-600"></i> Schedule Visit
+                    </button>
+                  </div>
+                \` : \`
+                  <div class="bg-amber-50/80 border border-amber-200 rounded-xl p-3 text-center">
+                    <div class="flex items-center justify-center gap-1.5 text-xs font-bold text-amber-900 mb-1">
+                      <i data-lucide="lock" class="w-3.5 h-3.5 text-amber-600"></i>
+                      Owner Contact & Phone Hidden
+                    </div>
+                    <p class="text-[11px] text-amber-800 mb-2">Get direct phone number, WhatsApp & visit scheduling.</p>
+                    <button onclick="openTenantPassModal()" class="w-full py-2 px-3 rounded-lg font-bold text-xs bg-amber-500 hover:bg-amber-600 text-white shadow-sm transition flex items-center justify-center gap-1.5">
+                      <i data-lucide="key" class="w-3.5 h-3.5"></i> Unlock for ₹99 Pass
+                    </button>
+                  </div>
+                \`}
+              </div>
+            </div>
+          </div>
+        \`;
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    function applyFilters() {
+      renderPropertiesGrid();
+    }
+
+    function resetFilters() {
+      if (document.getElementById('filter-city')) document.getElementById('filter-city').value = '';
+      if (document.getElementById('filter-type')) document.getElementById('filter-type').value = 'ALL';
+      if (document.getElementById('filter-budget')) document.getElementById('filter-budget').value = '999999';
+      renderPropertiesGrid();
+    }
+
+    function openTenantPassModal() {
+      document.getElementById('tenant-modal').classList.remove('hidden');
+    }
+    function closeTenantPassModal() {
+      document.getElementById('tenant-modal').classList.add('hidden');
+    }
+
+    function handleTenantPassPayment() {
+      const name = document.getElementById('tenant-reg-name').value.trim();
+      const whatsapp = document.getElementById('tenant-reg-whatsapp').value.trim();
+      const utr = document.getElementById('tenant-reg-utr').value.trim();
+
+      if (!name || !whatsapp || !utr) {
+        alert('Please fill out all fields including your 12-digit payment UTR ID.');
+        return;
+      }
+
+      tenantPass = {
+        id: 'tenant_' + Date.now(),
+        name: name,
+        whatsapp: whatsapp,
+        hasPaidPass: true,
+        passUtr: utr,
+        passPurchasedAt: new Date().toISOString()
+      };
+
+      localStorage.setItem('nestfinder_tenant_pass', JSON.stringify(tenantPass));
+
+      if (typeof confetti === 'function') {
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+      }
+
+      closeTenantPassModal();
+      updateTenantPassUI();
+      renderPropertiesGrid();
+      alert('🎉 Congratulations ' + name + '! Your ₹99 Tenant Pass (UTR: ' + utr + ') is verified. All owner contacts are unlocked!');
+    }
+
+    function updateTenantPassUI() {
+      const hasPaid = tenantPass && tenantPass.hasPaidPass;
+      const lockedBanner = document.getElementById('tenant-pass-banner');
+      const unlockedBanner = document.getElementById('tenant-pass-unlocked-banner');
+      const passBtnText = document.getElementById('pass-btn-text');
+      const activeUtr = document.getElementById('active-pass-utr');
+
+      if (hasPaid) {
+        if (lockedBanner) lockedBanner.classList.add('hidden');
+        if (unlockedBanner) unlockedBanner.classList.remove('hidden');
+        if (activeUtr) activeUtr.innerText = tenantPass.passUtr || 'VERIFIED';
+        if (passBtnText) passBtnText.innerText = 'Pass Active (✓)';
+      } else {
+        if (lockedBanner) lockedBanner.classList.remove('hidden');
+        if (unlockedBanner) unlockedBanner.classList.add('hidden');
+        if (passBtnText) passBtnText.innerText = 'Unlock Contacts (₹99)';
+      }
+    }
+
+    function handlePhotoUpload(event, index) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        document.getElementById('preview-img-' + index).src = e.target.result;
+        document.getElementById('photo-url-' + index).value = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function fillSamplePhotos() {
+      const samples = [
+        'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1507089947368-19c1da9775ae?auto=format&fit=crop&w=800&q=80'
+      ];
+      for (let i = 0; i < 4; i++) {
+        document.getElementById('preview-img-' + i).src = samples[i];
+        document.getElementById('photo-url-' + i).value = samples[i];
+      }
+    }
+
+    function handleOwnerFormSubmit(event) {
+      event.preventDefault();
+      const title = document.getElementById('owner-prop-title').value.trim();
+      const type = document.getElementById('owner-prop-type').value;
+      const city = document.getElementById('owner-prop-city').value.trim();
+      const landmark = document.getElementById('owner-prop-landmark').value.trim();
+      const address = document.getElementById('owner-prop-address').value.trim();
+      const rent = Number(document.getElementById('owner-prop-rent').value);
+      const deposit = Number(document.getElementById('owner-prop-deposit').value);
+      const sharing = document.getElementById('owner-prop-sharing').value;
+      const name = document.getElementById('owner-name').value.trim();
+      const phone = document.getElementById('owner-phone').value.trim();
+      const whatsapp = document.getElementById('owner-whatsapp').value.trim();
+      const utr = document.getElementById('owner-listing-utr').value.trim();
+
+      const images = [
+        document.getElementById('photo-url-0').value,
+        document.getElementById('photo-url-1').value,
+        document.getElementById('photo-url-2').value,
+        document.getElementById('photo-url-3').value
+      ];
+
+      const checkedBoxes = document.querySelectorAll('input[name="facilities"]:checked');
+      const facilities = Array.from(checkedBoxes).map(cb => cb.value);
+
+      const newProperty = {
+        id: 'prop-' + Date.now(),
+        title: title,
+        propertyType: type,
+        sharingType: sharing,
+        address: address,
+        city: city,
+        landmark: landmark,
+        monthlyRent: rent,
+        securityDeposit: deposit,
+        ownerName: name,
+        ownerPhone: phone,
+        ownerWhatsapp: whatsapp,
+        images: images,
+        facilities: facilities.length > 0 ? facilities : ['Wi-Fi 200+ Mbps', 'Attached Washroom'],
+        isVerified: true
+      };
+
+      properties.unshift(newProperty);
+
+      if (typeof confetti === 'function') {
+        confetti({ particleCount: 100, spread: 80, origin: { y: 0.5 } });
+      }
+
+      alert('🎉 Listing Published! Your property "' + title + '" (UTR: ' + utr + ') has been verified and added to live listings.');
+      document.getElementById('owner-listing-form').reset();
+      switchTab('explore');
+      renderPropertiesGrid();
+    }
+
+    function openAppointmentModal(propId) {
+      selectedAppointmentProperty = properties.find(p => p.id === propId);
+      if (!selectedAppointmentProperty) return;
+      document.getElementById('appoint-prop-title').innerText = selectedAppointmentProperty.title;
+      document.getElementById('appointment-modal').classList.remove('hidden');
+    }
+
+    function closeAppointmentModal() {
+      document.getElementById('appointment-modal').classList.add('hidden');
+    }
+
+    function handleBookAppointment(event) {
+      event.preventDefault();
+      const date = document.getElementById('appoint-date').value;
+      const slot = document.getElementById('appoint-slot').value;
+      closeAppointmentModal();
+      alert('📅 Visit Scheduled! Owner has been notified for: ' + date + ' (' + slot + ')');
+    }
+
+    function openGalleryModal(propId) {
+      const prop = properties.find(p => p.id === propId);
+      if (!prop) return;
+      document.getElementById('gallery-title').innerText = prop.title + ' (4 Photos)';
+      for (let i = 0; i < 4; i++) {
+        document.getElementById('gal-img-' + i).src = prop.images[i];
+      }
+      document.getElementById('gallery-modal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeGalleryModal() {
+      document.getElementById('gallery-modal').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>

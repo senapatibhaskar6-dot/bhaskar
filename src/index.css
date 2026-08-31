@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand: #FF5A5F;
+  --color-brand-hover: #E0484D;
+  --color-teal-accent: #00A699;
+  --color-teal-hover: #00847A;
+  --color-charcoal: #222222;
+  --color-canvas: #F7F9FB;
+  --color-amber-accent: #FFB400;
+}
+
+body {
+  background-color: #F7F9FB;
+  color: #222222;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
