@@ -1,0 +1,21 @@
+{
+  "short_name": "NestFinder",
+  "name": "NestFinder - PG & Rentals",
+  "icons": [
+    {
+      "src": "/logo.jpg?v=4",
+      "type": "image/jpeg",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/logo.jpg?v=4",
+      "type": "image/jpeg",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#FFFFFF",
+  "theme_color": "#FF5A5F",
+  "display": "standalone",
+  "orientation": "portrait"
+}

@@ -62,20 +62,10 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
     'RO Purified Water'
   ]);
 
-  // Listing Fee (₹99) UTR
-  const [utr, setUtr] = useState('');
+  // Listing Fee is now FREE
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [copiedUpi, setCopiedUpi] = useState(false);
   const [formError, setFormError] = useState('');
   const [submittedSuccess, setSubmittedSuccess] = useState(false);
-
-  const upiId = 'senapatibhaskar6@oksbi';
-
-  const handleCopyUpi = () => {
-    navigator.clipboard.writeText(upiId);
-    setCopiedUpi(true);
-    setTimeout(() => setCopiedUpi(false), 2000);
-  };
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const file = e.target.files?.[0];
@@ -128,16 +118,13 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
       setFormError('Please enter owner name and both phone & WhatsApp numbers.');
       return;
     }
-    if (!utr.trim() || utr.trim().length < 8) {
-      setFormError('Please complete the ₹99 listing fee payment and enter your 12-digit UTR ID.');
-      return;
-    }
 
     setIsSubmitting(true);
 
     setTimeout(() => {
       setIsSubmitting(false);
 
+      const fakeUtr = `FREE-${Date.now().toString().slice(-6)}`;
       const newProperty: Property = {
         id: `prop_${Date.now()}`,
         title: title.trim(),
@@ -157,7 +144,7 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
           description.trim() ||
           `Verified ${propertyType} in ${city}. Fully maintained with modern amenities and 24/7 security. Zero brokerage.`,
         isVerified: true,
-        listingUtr: utr.trim(),
+        listingUtr: fakeUtr,
         genderRestriction,
         createdAt: new Date().toISOString()
       };
@@ -182,19 +169,19 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
     return (
       <div className="max-w-2xl mx-auto py-12 px-4 text-center">
         <div className="bg-white rounded-3xl p-8 sm:p-10 border border-slate-200 shadow-xl space-y-5">
-          <div className="w-20 h-20 rounded-3xl bg-[#00A699]/15 text-[#00A699] mx-auto flex items-center justify-center shadow-lg shadow-[#00A699]/20">
+          <div className="w-20 h-20 rounded-3xl bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center shadow-lg shadow-emerald-100/40">
             <CheckCircle className="w-12 h-12" />
           </div>
 
           <div>
-            <span className="inline-block px-3 py-1 bg-[#00A699]/10 text-[#00847A] text-xs font-bold rounded-full mb-2 border border-[#00A699]/30">
-              Verified & Published (UTR: {utr})
+            <span className="inline-block px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-full mb-2 border border-emerald-200">
+              Free Verified & Published ✓
             </span>
             <h2 className="text-2xl sm:text-3xl font-black text-[#222222]">
               Property Successfully Listed!
             </h2>
             <p className="text-slate-600 text-sm mt-2 max-w-md mx-auto">
-              Your property <span className="font-bold text-[#222222]">"{title}"</span> is now live in the NestFinder search directory. Verified tenants can now view your listing and contact you directly!
+              Your property <span className="font-bold text-[#222222]">"{title}"</span> is now live in the NestFinder search directory. All interested tenants must pass our <span className="font-bold text-emerald-600">Aadhaar OTP Security Verification</span> before they can contact you!
             </p>
           </div>
 
@@ -211,7 +198,6 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
                 setTitle('');
                 setMonthlyRent('');
                 setSecurityDeposit('');
-                setUtr('');
               }}
               className="px-6 py-3 bg-[#F7F9FB] hover:bg-slate-200 text-[#222222] rounded-xl font-bold text-sm transition border border-slate-200"
             >
@@ -582,70 +568,48 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
             </div>
           </div>
 
-          {/* Section 6: ₹99 Owner Listing Fee & UTR Verification */}
-          <div className="bg-gradient-to-br from-[#FF5A5F]/10 via-[#F7F9FB] to-[#FFB400]/10 border border-[#FF5A5F]/25 rounded-3xl p-6 sm:p-8 space-y-5">
-            <div className="flex items-center gap-2">
-              <span className="w-7 h-7 rounded-xl bg-[#FF5A5F] text-white text-xs font-black flex items-center justify-center">
+          {/* Section 6: Free Listing with Aadhaar Verified Tenant Security Pledge */}
+          <div className="bg-gradient-to-br from-emerald-50 via-[#F7F9FB] to-[#00A699]/10 border border-emerald-200 rounded-3xl p-6 sm:p-8 space-y-5">
+            <div className="flex items-start gap-3">
+              <span className="w-7 h-7 rounded-xl bg-[#00A699] text-white text-xs font-black flex items-center justify-center shrink-0 mt-0.5">
                 6
               </span>
               <div>
-                <h3 className="text-base sm:text-lg font-black text-[#222222]">
-                  Owner Listing Verification Fee (₹99 via UPI QR)
+                <h3 className="text-base sm:text-lg font-black text-[#222222] flex items-center gap-2">
+                  <span>100% Free Owner Listing (সম্পূৰ্ণ বিনামূলীয়া পঞ্জীয়ন)</span>
+                  <span className="px-2.5 py-0.5 text-[10px] bg-emerald-600 text-white font-extrabold uppercase rounded-full tracking-wider animate-bounce">
+                    FREE
+                  </span>
                 </h3>
-                <p className="text-xs text-slate-700 font-medium">
-                  We charge a nominal ₹99 verification fee to eliminate fake spam listings and ensure 100% genuine properties for students.
+                <p className="text-xs text-slate-700 font-semibold mt-1">
+                  মালিকসকলৰ সুবিধাৰ বাবে ঘৰৰ বিজ্ঞাপন দিয়াটো সম্পূর্ণ ফ্ৰী ৰখা হৈছে! We charge absolutely ₹0 from Property Owners to list properties.
                 </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-              {/* Official Branded Google Pay QR Card */}
-              <div className="md:col-span-5 flex justify-center">
-                <UpiPaymentQrCard
-                  amount={99}
-                  note={`Listing Fee - ${title || 'Property'}`}
-                  showCopyButton={false}
-                />
+            <div className="bg-white border border-emerald-100 rounded-2xl p-5 shadow-xs space-y-4">
+              <div className="flex items-start gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="text-xs sm:text-sm font-extrabold text-[#222222]">
+                    মালিকৰ সুৰক্ষা আৰু বিশ্বাসযোগ্যতাৰ গেৰাণ্টি (Owner Safety & Safety Lock)
+                  </h4>
+                  <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                    আপোনাৰ নিৰাপত্তা সুৰক্ষিত ৰাখিবলৈ আমি সকলো ভাড়াতীয়া বা শিক্ষাৰ্থীৰ বাবে **Aadhaar OTP Identity Verification** বাধ্যতামূলক কৰিছোঁ। কেৱল পৰিচয় প্ৰমাণিত কৰা প্ৰকৃত ভাড়াতীয়াইহে আপোনাৰ মোবাইল আৰু হোৱাটছএপ নম্বৰ চাব পাৰিব। ইয়াৰ ফলত কোনো স্পেম, ফ্ৰড বা মধ্যভোগী দালাল আহিব নোৱাৰে!
+                  </p>
+                </div>
               </div>
 
-              {/* UTR Input & Action */}
-              <div className="md:col-span-7 space-y-4">
-                <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-200 text-xs shadow-xs">
-                  <div>
-                    <span className="text-[10px] text-slate-400 block uppercase font-bold">Payee Account (Bhaskar Senapati)</span>
-                    <span className="text-slate-600 font-medium">UPI ID: <b className="font-mono text-[#222222]">{upiId}</b></span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleCopyUpi}
-                    className="px-2.5 py-1.5 bg-[#FF5A5F]/10 hover:bg-[#FF5A5F]/20 text-[#FF5A5F] font-bold rounded-lg transition text-[11px] flex items-center gap-1"
-                  >
-                    {copiedUpi ? <Check className="w-3 h-3 text-[#00A699]" /> : <Copy className="w-3 h-3" />}
-                    {copiedUpi ? 'Copied' : 'Copy UPI'}
-                  </button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs font-bold text-slate-700">
+                <div className="flex items-center gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  <CheckCircle className="w-4.5 h-4.5 text-emerald-600 shrink-0" />
+                  <span>No Brokerage, No Fees (₹০ চার্জ)</span>
                 </div>
-
-                <div className="flex items-center gap-2 text-xs text-slate-600 bg-emerald-50 border border-emerald-200 p-2.5 rounded-xl">
-                  <ShieldCheck className="w-4 h-4 text-[#00C853] shrink-0" />
-                  <span>Official NestFinder Merchant QR &bull; Scan via GPay, PhonePe, Paytm, CRED</span>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-800 uppercase mb-1">
-                    Enter 12-Digit Payment UTR / Txn ID *
-                  </label>
-                  <input
-                    required
-                    type="text"
-                    value={utr}
-                    onChange={(e) => setUtr(e.target.value)}
-                    placeholder="e.g. 423189098719"
-                    maxLength={16}
-                    className="w-full px-4 py-3 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#FF5A5F] focus:outline-none font-mono text-[#222222] font-bold"
-                  />
-                  <span className="text-[11px] text-slate-500 mt-1 block">
-                    Find the 12-digit UTR in your GPay / PhonePe / Paytm payment receipt.
-                  </span>
+                <div className="flex items-center gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  <ShieldCheck className="w-4.5 h-4.5 text-emerald-600 shrink-0" />
+                  <span>Only Aadhaar Verified Tenants Can Call</span>
                 </div>
               </div>
             </div>
@@ -663,17 +627,17 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-4 px-8 rounded-2xl font-black text-base bg-[#FF5A5F] hover:bg-[#E0484D] text-white shadow-xl shadow-[#FF5A5F]/25 transition flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-4 px-8 rounded-2xl font-black text-base bg-[#00A699] hover:bg-[#00847A] text-white shadow-xl shadow-[#00A699]/25 transition flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {isSubmitting ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Verifying UTR & Publishing...</span>
+                  <span>Listing & Securing Your Property...</span>
                 </>
               ) : (
                 <>
                   <CheckCircle className="w-5 h-5" />
-                  <span>Verify UTR & Publish Listing (₹99 Fee)</span>
+                  <span>Publish My Free Property Listing Now ✓</span>
                 </>
               )}
             </button>

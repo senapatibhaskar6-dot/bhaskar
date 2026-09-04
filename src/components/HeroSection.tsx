@@ -60,13 +60,13 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
         <p className="text-slate-800 text-xs sm:text-sm max-w-xl mx-auto mb-4 font-semibold drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)]">
           Explore verified student hostels, single/double sharing PGs, and family apartments.
-          Instant owner direct contact access with ₹99 pass.
+          Instant direct owner contacts and exact addresses unlocked with the ₹99 Tenant Pass.
         </p>
 
         {/* Quick Highlights Chips */}
         <div className="flex flex-wrap items-center justify-center gap-2 mb-4 text-[11px] sm:text-xs font-bold text-slate-900">
           <span className="px-2.5 py-1 bg-white/85 border border-slate-200 rounded-lg flex items-center gap-1 backdrop-blur-md shadow-sm text-slate-900">
-            <Sparkles className="w-3 h-3 text-amber-500" /> ₹99 Lifetime Pass
+            <Sparkles className="w-3 h-3 text-amber-500" /> ₹99 Pass + Aadhaar Secure
           </span>
           <span className="px-2.5 py-1 bg-white/85 border border-slate-200 rounded-lg flex items-center gap-1 backdrop-blur-md shadow-sm text-slate-900">
             <MapPin className="w-3 h-3 text-rose-500" /> Exact Map & Landmarks

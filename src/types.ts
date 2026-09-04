@@ -30,6 +30,9 @@ export interface Property {
   listingUtr?: string;
   createdAt: string;
   genderRestriction?: 'Male only' | 'Female only' | 'Any / Family';
+  ratingValue?: number;
+  ratingCount?: number;
+  userRating?: number;
 }
 
 export interface TenantUser {

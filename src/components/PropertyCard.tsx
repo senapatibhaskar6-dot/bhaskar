@@ -20,6 +20,7 @@ interface PropertyCardProps {
   onOpenPassModal: () => void;
   onOpenGallery: (property: Property) => void;
   onBookAppointment: (property: Property) => void;
+  onRateProperty?: (propertyId: string, rating: number) => void;
 }
 
 export const PropertyCard: React.FC<PropertyCardProps> = ({
@@ -27,9 +28,20 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   hasPass,
   onOpenPassModal,
   onOpenGallery,
-  onBookAppointment
+  onBookAppointment,
+  onRateProperty
 }) => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+
+  const getPropertyDaysLeft = () => {
+    if (!property.createdAt || !property.listingUtr) return null;
+    const createdTime = new Date(property.createdAt).getTime();
+    const now = new Date().getTime();
+    const diffDays = Math.floor((now - createdTime) / (1000 * 60 * 60 * 24));
+    return Math.max(0, 30 - diffDays);
+  };
+  const daysLeft = getPropertyDaysLeft();
 
   // Badge styling for property types using Vibrant Palette
   const getTypeBadgeColor = (type: string) => {
@@ -78,6 +90,17 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
                 {property.genderRestriction}
               </span>
             )}
+            {daysLeft !== null && (
+              daysLeft > 0 ? (
+                <span className="px-2 py-0.5 text-[11px] font-extrabold bg-[#FFB400] text-[#222222] rounded-lg shadow-sm animate-pulse">
+                  Active: {daysLeft} Days Left
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 text-[11px] font-extrabold bg-red-600 text-white rounded-lg shadow-sm">
+                  Listing Expired (Locked)
+                </span>
+              )
+            )}
           </div>
 
           {/* 4 Photo Counter Chip */}
@@ -119,17 +142,22 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
       {/* Card Content Details */}
       <div className="p-5 flex-1 flex flex-col justify-between">
         <div>
-          {/* Title & Verified Indicator */}
+          {/* Title & Verified Indicator & Rating */}
           <div className="flex items-start justify-between gap-2 mb-1.5">
             <h3
               onClick={() => onOpenGallery(property)}
-              className="font-extrabold text-base sm:text-lg text-[#222222] group-hover:text-[#FF5A5F] transition leading-snug cursor-pointer line-clamp-1"
+              className="font-extrabold text-base sm:text-lg text-[#222222] group-hover:text-[#FF5A5F] transition leading-snug cursor-pointer line-clamp-1 flex-1"
             >
               {property.title}
             </h3>
+            <div className="flex items-center gap-1 text-[11px] bg-amber-50 text-amber-700 font-bold px-2 py-0.5 rounded-lg border border-amber-200/60 shrink-0 mt-1">
+              <span className="text-amber-500 text-xs">★</span>
+              <span>{Number(property.ratingValue || 4.7).toFixed(1)}</span>
+              <span className="text-slate-400 font-normal">({property.ratingCount || 12})</span>
+            </div>
           </div>
 
-          {/* Location & Address (Always Visible per requirement) */}
+          {/* Location & Address (Always Visible per requirement, but hiding street address if hasPass is false) */}
           <div className="flex items-start gap-1.5 text-xs text-slate-600 mb-3">
             <MapPin className="w-4 h-4 text-[#FF5A5F] shrink-0 mt-0.5" />
             <div>
@@ -137,7 +165,13 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
               {property.landmark && (
                 <span className="text-slate-500"> • {property.landmark}</span>
               )}
-              <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">{property.address}</p>
+              {hasPass ? (
+                <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">{property.address}</p>
+              ) : (
+                <p className="text-[11px] text-rose-500 font-bold mt-0.5 bg-rose-50 px-2 py-0.5 rounded-md inline-block">
+                  🔒 Register/Unlock to view exact street address
+                </p>
+              )}
             </div>
           </div>
 
@@ -190,7 +224,22 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
 
         {/* OWNER CONTACT SECTION: LOCKED vs UNLOCKED */}
         <div className="pt-3 border-t border-slate-100 mt-auto">
-          {hasPass ? (
+          {daysLeft === 0 ? (
+            /* OWNER SUBSCRIPTION EXPIRED STATE (Always Locked) */
+            <div className="bg-gradient-to-r from-red-50 via-rose-50/20 to-orange-50/40 border border-red-200 rounded-2xl p-4 text-center">
+              <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-red-950 mb-1.5">
+                <Lock className="w-4 h-4 text-red-600 shrink-0" />
+                <span className="font-extrabold text-red-700">Owner Listing Expired (Locked)</span>
+              </div>
+              <p className="text-[11px] text-slate-600 mb-3 leading-normal">
+                This owner's 1-month active listing package has expired. To see the owner's phone & WhatsApp contact, the owner must renew their listing package.
+              </p>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-100 text-red-700 text-[10px] font-black rounded-lg uppercase tracking-wider">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping"></span>
+                <span>Awaiting Owner Renewal</span>
+              </div>
+            </div>
+          ) : hasPass ? (
             /* UNLOCKED STATE */
             <div className="bg-gradient-to-r from-[#00A699]/10 via-teal-50 to-[#00A699]/10 border border-[#00A699]/40 rounded-2xl p-4 shadow-xs">
               <div className="flex items-center justify-between mb-3">
@@ -244,23 +293,55 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
                 <Calendar className="w-3.5 h-3.5 text-[#00A699]" />
                 <span>Schedule Visit Appointment</span>
               </button>
+
+              {/* Interactive Owner Rating System */}
+              <div className="mt-3 pt-3 border-t border-slate-200/60">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1 text-center">
+                  {property.userRating ? 'Your Rating for Owner' : 'Rate Your Experience with Owner'}
+                </span>
+                <div className="flex items-center justify-center gap-1.5">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      disabled={Boolean(property.userRating)}
+                      onClick={() => onRateProperty && onRateProperty(property.id, star)}
+                      className={`text-lg transition-transform hover:scale-125 ${
+                        star <= (property.userRating || 0)
+                          ? 'text-amber-500'
+                          : star <= hoverRating
+                          ? 'text-amber-400'
+                          : 'text-slate-300'
+                      } ${!property.userRating ? 'cursor-pointer' : 'cursor-default'}`}
+                      onMouseEnter={() => !property.userRating && setHoverRating(star)}
+                      onMouseLeave={() => !property.userRating && setHoverRating(0)}
+                    >
+                      ★
+                    </button>
+                  ))}
+                </div>
+                {property.userRating && (
+                  <p className="text-[10px] text-center text-emerald-600 font-bold mt-1">
+                    Thank you for rating! ✓
+                  </p>
+                )}
+              </div>
             </div>
           ) : (
-            /* LOCKED STATE (per requirement) */
-            <div className="bg-gradient-to-r from-amber-50 via-rose-50/50 to-orange-50/70 border border-amber-200/90 rounded-2xl p-4 text-center">
-              <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-amber-950 mb-1">
+            /* LOCKED STATE (Aadhaar Security & Fee Requirement) */
+            <div className="bg-gradient-to-r from-amber-50 via-[#F7F9FB] to-amber-50/50 border border-amber-200 rounded-2xl p-4 text-center">
+              <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-amber-800 mb-1">
                 <Lock className="w-4 h-4 text-[#FF5A5F]" />
-                <span>Owner Phone & WhatsApp Locked</span>
+                <span className="font-extrabold">Address & Owner Contact Locked</span>
               </div>
-              <p className="text-[11px] text-amber-900/80 mb-3">
-                Unlock direct owner contact numbers and schedule visits for ₹99 one-time student pass.
+              <p className="text-[11px] text-slate-600 mb-3 leading-relaxed">
+                Verify your Aadhaar details via OTP and pay the ₹99 one-time registration fee to get 30-Day unlimited access to direct owner numbers, exact street addresses, and WhatsApp chats.
               </p>
               <button
                 onClick={onOpenPassModal}
-                className="w-full py-2.5 px-4 rounded-xl font-black text-xs bg-gradient-to-r from-[#FF5A5F] to-[#FF7E82] hover:from-[#E0484D] hover:to-[#FF5A5F] text-white shadow-md shadow-[#FF5A5F]/25 transition flex items-center justify-center gap-2 group"
+                className="w-full py-2.5 px-4 rounded-xl font-black text-xs bg-[#FF5A5F] hover:bg-[#E0484D] text-white shadow-md shadow-[#FF5A5F]/20 transition flex items-center justify-center gap-2 group animate-pulse"
               >
                 <Unlock className="w-3.5 h-3.5" />
-                <span>Students & Tenants Listing (₹99)</span>
+                <span>Get Student & Tenant Pass (₹99)</span>
                 <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>

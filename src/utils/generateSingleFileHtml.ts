@@ -24,6 +24,14 @@ export function generateSingleFileHtml(properties: Property[]): string {
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #F7F9FB; color: #222222; }
     .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+    @media (max-width: 500px) {
+      .mobile-compact-hidden { display: none !important; }
+      .mobile-compact-show { display: inline !important; }
+      .mobile-logo-text { display: none !important; }
+    }
+    @media (min-width: 501px) {
+      .mobile-compact-show { display: none !important; }
+    }
   </style>
 </head>
 <body class="bg-[#F7F9FB] text-[#222222] min-h-screen flex flex-col">
@@ -60,7 +68,7 @@ export function generateSingleFileHtml(properties: Property[]): string {
           <path d="M76 142 C88 170 152 170 164 142 C152 162 136 166 120 166 C104 166 88 162 76 142 Z" fill="url(#nfYellowGrad)" stroke="#FF9E00" stroke-width="1"/>
           <rect x="36" y="190" width="168" height="8" rx="4" fill="url(#nfGreenGrad)" stroke="#FFFFFF" stroke-width="1.5"/>
         </svg>
-        <div>
+        <div class="mobile-logo-text">
           <div class="flex items-center gap-2">
             <span class="text-xl sm:text-2xl font-black tracking-tight text-[#222222]">Nest<span class="text-[#00A859]">Finder</span></span>
             <span class="hidden sm:inline-block px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-[#00A699]/10 text-[#00A699] rounded-full border border-[#00A699]/30">100% Direct</span>
@@ -70,18 +78,21 @@ export function generateSingleFileHtml(properties: Property[]): string {
       </div>
 
       <!-- Navigation & Action Buttons -->
-      <div class="flex items-center gap-2 sm:gap-3">
-        <button id="nav-explore-btn" onclick="switchTab('explore')" class="px-3 sm:px-4 py-2 rounded-xl text-sm font-semibold transition bg-[#FF5A5F]/10 text-[#FF5A5F]">
-          Explore Listings
+      <div class="flex items-center gap-1.5 sm:gap-3">
+        <button id="nav-explore-btn" onclick="switchTab('explore')" class="px-2.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition bg-[#FF5A5F]/10 text-[#FF5A5F] shrink-0">
+          Explore
         </button>
-        <button id="nav-owner-btn" onclick="switchTab('owner')" class="px-3 sm:px-4 py-2 rounded-xl text-sm font-bold transition bg-rose-50 hover:bg-rose-100 text-[#FF5A5F] border border-rose-200 shadow-xs flex items-center gap-1.5">
+        <button id="nav-owner-btn" onclick="switchTab('owner')" class="px-2 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition bg-rose-50 hover:bg-rose-100 text-[#FF5A5F] border border-rose-200 shadow-xs flex items-center gap-1 shrink-0">
           <i data-lucide="plus-circle" class="w-4 h-4 text-[#FF5A5F]"></i>
-          <span class="hidden xs:inline">For Owner Listing</span>
-          <span class="xs:hidden">Owner Listing</span>
+          <span class="hidden sm:inline">For Owner Listing</span>
+          <span class="sm:hidden mobile-compact-hidden">Owner Listing</span>
+          <span class="mobile-compact-show">Owner</span>
         </button>
-        <button id="nav-pass-btn" onclick="openTenantPassModal()" class="px-3 sm:px-4 py-2 rounded-xl text-sm font-bold bg-[#FFB400] hover:bg-amber-500 text-[#222222] shadow-sm flex items-center gap-1.5">
+        <button id="nav-pass-btn" onclick="openTenantPassModal()" class="px-2 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-[#FFB400] hover:bg-amber-500 text-[#222222] shadow-sm flex items-center gap-1 shrink-0">
           <i data-lucide="key" class="w-4 h-4"></i>
-          <span id="pass-btn-text">Students & Tenants Listing (₹99)</span>
+          <span id="pass-btn-text" class="hidden sm:inline">Students & Tenants Listing (₹99)</span>
+          <span class="sm:hidden mobile-compact-hidden">Tenants & Students</span>
+          <span class="mobile-compact-show">Tenant Pass</span>
         </button>
       </div>
     </div>
@@ -384,8 +395,8 @@ export function generateSingleFileHtml(properties: Property[]): string {
   </footer>
 
   <!-- TENANT PASS MODAL (₹99) -->
-  <div id="tenant-pass-modal" class="hidden fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl max-w-md w-full shadow-2xl overflow-hidden border border-slate-200">
+  <div id="tenant-pass-modal" onclick="if(event.target === this) closeTenantPassModal()" class="hidden fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 cursor-pointer">
+    <div class="bg-white rounded-3xl max-w-md w-full shadow-2xl overflow-hidden border border-slate-200 cursor-default">
       <div class="bg-gradient-to-r from-[#FF5A5F] via-[#FF7E82] to-[#FFB400] p-6 text-white relative">
         <button onclick="closeTenantPassModal()" class="absolute top-4 right-4 text-white/80 hover:text-white bg-black/20 p-2 rounded-full">
           <i data-lucide="x" class="w-5 h-5"></i>
@@ -416,6 +427,9 @@ export function generateSingleFileHtml(properties: Property[]): string {
         </div>
         <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-[#FF5A5F] to-[#FF7E82] text-white rounded-xl font-bold text-sm shadow-md shadow-[#FF5A5F]/25">
           Verify UTR & Unlock All Contacts (₹99)
+        </button>
+        <button type="button" onclick="closeTenantPassModal()" class="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold rounded-xl text-xs transition mt-1">
+          Cancel & Go Back to Home Screen
         </button>
       </form>
     </div>

@@ -26,9 +26,9 @@ export const Navbar: React.FC<NavbarProps> = ({
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs">
       {/* Top Vibrant Announcement Banner */}
       <div className="bg-[#222222] text-white text-xs py-2 px-4 text-center font-medium flex items-center justify-center gap-2 border-b border-white/5">
-        <span className="inline-block w-2 h-2 rounded-full bg-[#00A859] animate-pulse shrink-0" />
+        <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
         <span className="truncate">
-          100% Direct Owner Access • Zero Brokerage • ₹99 Student & Tenant Pass • Verified PGs & Flats
+          100% Free Owner Listings • Zero Brokerage • Aadhaar OTP Secured Tenants • Direct Owner Contacts Unlocked!
         </span>
       </div>
 
@@ -56,7 +56,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <button
             onClick={() => setActiveTab('owner')}
-            className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 border shadow-xs ${
+            className={`px-2 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1 sm:gap-1.5 border shadow-xs shrink-0 ${
               activeTab === 'owner'
                 ? 'bg-[#FF5A5F] text-white border-[#FF5A5F] shadow-sm shadow-[#FF5A5F]/30 ring-2 ring-[#FF5A5F]/30'
                 : 'bg-rose-50 hover:bg-rose-100/90 text-[#FF5A5F] border-rose-200 hover:border-rose-300'
@@ -64,53 +64,34 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <PlusCircle className="w-4 h-4 shrink-0" />
             <span className="hidden sm:inline font-bold">For Owner Listing</span>
-            <span className="sm:hidden font-bold">Owner Listing</span>
+            <span className="hidden xs:inline sm:hidden font-bold">Owner Listing</span>
+            <span className="xs:hidden font-bold">Owner</span>
           </button>
 
-          {/* Student Pass Button */}
+          {/* Tenant Aadhaar Button */}
           <button
             onClick={onOpenPassModal}
-            className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold shadow-xs flex items-center gap-1.5 transition ${
+            className={`px-2 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold shadow-xs flex items-center gap-1 sm:gap-1.5 transition shrink-0 ${
               isPassActive
-                ? 'bg-[#00A699] hover:bg-[#00847A] text-white shadow-sm shadow-[#00A699]/25'
-                : 'bg-[#FFB400] hover:bg-amber-500 text-[#222222] font-black ring-2 ring-[#FFB400]/40'
+                ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-600/25'
+                : 'bg-[#FF5A5F] hover:bg-[#E0484D] text-white font-black ring-2 ring-[#FF5A5F]/40 animate-pulse'
             }`}
           >
             {isPassActive ? (
               <>
                 <CheckCircle2 className="w-4 h-4" />
-                <span className="hidden sm:inline">Pass Active</span>
-                <span className="sm:hidden">Pass ✓</span>
+                <span className="hidden sm:inline">Active Pass ✓</span>
+                <span className="hidden xs:inline sm:hidden">Active ✓</span>
+                <span className="xs:hidden">Active ✓</span>
               </>
             ) : (
               <>
                 <Key className="w-4 h-4" />
-                <span className="hidden sm:inline">Students & Tenants Listing (₹99)</span>
-                <span className="sm:hidden">Students & Tenants (₹99)</span>
+                <span className="hidden sm:inline">Tenant & Student Entry Pass (₹99)</span>
+                <span className="hidden xs:inline sm:hidden">Tenant & Student Entry</span>
+                <span className="xs:hidden">Tenant & Student Entry</span>
               </>
             )}
-          </button>
-
-          {/* Supabase Config Button */}
-          <button
-            onClick={onOpenSupabaseModal}
-            title="Configure Supabase Database"
-            aria-label="Configure Supabase Database"
-            className="p-2 sm:px-3 sm:py-2 rounded-xl text-slate-700 hover:text-[#222222] hover:bg-slate-100 text-xs font-semibold flex items-center gap-1.5 border border-slate-200"
-          >
-            <Database className="w-4 h-4 text-[#00A699]" />
-            <span className="hidden lg:inline">Supabase</span>
-          </button>
-
-          {/* Export Single HTML Modal Button */}
-          <button
-            onClick={onOpenExportModal}
-            title="Download Standalone Single-file HTML for Netlify"
-            aria-label="Download Standalone Single-file HTML for Netlify"
-            className="p-2 sm:px-3 sm:py-2 rounded-xl text-[#FF5A5F] hover:bg-[#FF5A5F]/10 text-xs font-semibold flex items-center gap-1.5 border border-[#FF5A5F]/30"
-          >
-            <Download className="w-4 h-4 text-[#FF5A5F]" />
-            <span className="hidden lg:inline">Netlify HTML</span>
           </button>
         </div>
       </div>

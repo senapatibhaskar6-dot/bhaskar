@@ -8,6 +8,7 @@
   --color-charcoal: #222222;
   --color-canvas: #F7F9FB;
   --color-amber-accent: #FFB400;
+  --breakpoint-xs: 480px;
 }
 
 body {
