@@ -16,7 +16,10 @@ import {
   IndianRupee,
   Phone,
   MessageCircle,
-  Layers
+  Layers,
+  Lock,
+  Unlock,
+  LogOut
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Property, PropertyType, SharingType } from '../types';
@@ -32,6 +35,19 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
   onAddProperty,
   onNavigateToExplore
 }) => {
+  // --- Owner Authentication States ---
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    return localStorage.getItem('nestfinder_owner_logged_in') === 'true';
+  });
+  const [activePortalTab, setActivePortalTab] = useState<'login' | 'register'>('login');
+  const [loginPhone, setLoginPhone] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [registerName, setRegisterName] = useState('');
+  const [registerPhone, setRegisterPhone] = useState('');
+  const [registerPassword, setRegisterPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+
+  // --- Property Registration Form States ---
   const [title, setTitle] = useState('');
   const [propertyType, setPropertyType] = useState<PropertyType>('Boys PG');
   const [sharingType, setSharingType] = useState<SharingType>('Double');
@@ -40,9 +56,94 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
   const [address, setAddress] = useState('');
   const [monthlyRent, setMonthlyRent] = useState('');
   const [securityDeposit, setSecurityDeposit] = useState('');
-  const [ownerName, setOwnerName] = useState('');
-  const [ownerPhone, setOwnerPhone] = useState('');
-  const [ownerWhatsapp, setOwnerWhatsapp] = useState('');
+  const [ownerName, setOwnerName] = useState(() => {
+    return localStorage.getItem('nestfinder_owner_name') || '';
+  });
+  const [ownerPhone, setOwnerPhone] = useState(() => {
+    return localStorage.getItem('nestfinder_owner_phone') || '';
+  });
+  const [ownerWhatsapp, setOwnerWhatsapp] = useState(() => {
+    return localStorage.getItem('nestfinder_owner_phone') || '';
+  });
+
+  // Handle Login submission
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError('');
+
+    if (!loginPhone.trim() || !loginPassword.trim()) {
+      setLoginError('Please enter both Phone Number and Password.');
+      return;
+    }
+
+    // Default tester credentials
+    if (loginPhone === '9876543210' && loginPassword === 'admin') {
+      localStorage.setItem('nestfinder_owner_logged_in', 'true');
+      localStorage.setItem('nestfinder_owner_phone', loginPhone);
+      localStorage.setItem('nestfinder_owner_name', 'Bhaskar Senapati');
+      setOwnerName('Bhaskar Senapati');
+      setOwnerPhone(loginPhone);
+      setOwnerWhatsapp(loginPhone);
+      setIsLoggedIn(true);
+      return;
+    }
+
+    // Custom accounts stored in localStorage
+    const savedAccounts = JSON.parse(localStorage.getItem('nestfinder_owner_accounts') || '[]');
+    const matched = savedAccounts.find((acc: any) => acc.phone === loginPhone && acc.password === loginPassword);
+    if (matched) {
+      localStorage.setItem('nestfinder_owner_logged_in', 'true');
+      localStorage.setItem('nestfinder_owner_phone', matched.phone);
+      localStorage.setItem('nestfinder_owner_name', matched.name);
+      setOwnerName(matched.name);
+      setOwnerPhone(matched.phone);
+      setOwnerWhatsapp(matched.phone);
+      setIsLoggedIn(true);
+    } else {
+      setLoginError('Invalid Phone Number or Password. Try again or register a new account!');
+    }
+  };
+
+  // Handle Register submission
+  const handleRegister = (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError('');
+
+    if (!registerName.trim() || !registerPhone.trim() || !registerPassword.trim()) {
+      setLoginError('Please fill in all fields to register.');
+      return;
+    }
+
+    const savedAccounts = JSON.parse(localStorage.getItem('nestfinder_owner_accounts') || '[]');
+    if (savedAccounts.some((acc: any) => acc.phone === registerPhone)) {
+      setLoginError('An owner with this phone number is already registered.');
+      return;
+    }
+
+    const newAccount = {
+      name: registerName.trim(),
+      phone: registerPhone.trim(),
+      password: registerPassword.trim()
+    };
+    savedAccounts.push(newAccount);
+    localStorage.setItem('nestfinder_owner_accounts', JSON.stringify(savedAccounts));
+
+    // Auto-login after registration
+    localStorage.setItem('nestfinder_owner_logged_in', 'true');
+    localStorage.setItem('nestfinder_owner_phone', newAccount.phone);
+    localStorage.setItem('nestfinder_owner_name', newAccount.name);
+    setOwnerName(newAccount.name);
+    setOwnerPhone(newAccount.phone);
+    setOwnerWhatsapp(newAccount.phone);
+    setIsLoggedIn(true);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('nestfinder_owner_logged_in');
+    localStorage.removeItem('nestfinder_owner_phone');
+    localStorage.removeItem('nestfinder_owner_name');
+    setIsLoggedIn(false);
+  };
   const [description, setDescription] = useState('');
   const [genderRestriction, setGenderRestriction] = useState<'Male only' | 'Female only' | 'Any / Family'>('Male only');
   
@@ -209,22 +310,215 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
     );
   }
 
+  if (!isLoggedIn) {
+    return (
+      <div className="max-w-md mx-auto py-10 px-4">
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          
+          {/* Top Google/Brand Bar */}
+          <div className="w-full grid grid-cols-4 h-1.5">
+            <div className="bg-[#FF5A5F]"></div>
+            <div className="bg-[#222222]"></div>
+            <div className="bg-[#00A699]"></div>
+            <div className="bg-[#FFB400]"></div>
+          </div>
+
+          {/* Secure Portal Header */}
+          <div className="p-6 bg-slate-50 border-b border-slate-100 text-center">
+            <div className="w-12 h-12 bg-[#FF5A5F]/10 text-[#FF5A5F] rounded-2xl flex items-center justify-center mx-auto mb-3.5 shadow-sm">
+              <Lock className="w-6 h-6" />
+            </div>
+            <h3 className="text-xl font-black text-slate-900 tracking-tight">Owner Secure Access Portal</h3>
+            <p className="text-xs text-slate-500 mt-1">Manage, verify and publish your direct rental listings</p>
+
+            {/* Compact Tabs */}
+            <div className="grid grid-cols-2 gap-2 bg-slate-200/60 p-1 rounded-xl mt-4">
+              <button
+                type="button"
+                onClick={() => { setActivePortalTab('login'); setLoginError(''); }}
+                className={`py-2 text-xs font-bold rounded-lg transition-all ${
+                  activePortalTab === 'login'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                Owner Login
+              </button>
+              <button
+                type="button"
+                onClick={() => { setActivePortalTab('register'); setLoginError(''); }}
+                className={`py-2 text-xs font-bold rounded-lg transition-all ${
+                  activePortalTab === 'register'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                New Registration
+              </button>
+            </div>
+          </div>
+
+          {/* Forms Body */}
+          <div className="p-6">
+            {loginError && (
+              <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 text-xs font-bold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
+                <span>{loginError}</span>
+              </div>
+            )}
+
+            {activePortalTab === 'login' ? (
+              /* Compact Login Form */
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">
+                    Phone Number *
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">+91</span>
+                    <input
+                      required
+                      type="tel"
+                      maxLength={10}
+                      value={loginPhone}
+                      onChange={(e) => setLoginPhone(e.target.value.replace(/\D/g, ''))}
+                      placeholder="Enter 10-digit phone"
+                      className="w-full pl-12 pr-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-[#FF5A5F] focus:bg-white text-slate-800"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">
+                    Password *
+                  </label>
+                  <input
+                    required
+                    type="password"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    placeholder="Enter password"
+                    className="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-[#FF5A5F] focus:bg-white text-slate-800"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-3 bg-[#FF5A5F] hover:bg-[#E0484D] text-white rounded-xl font-black text-xs shadow-md shadow-[#FF5A5F]/20 transition flex items-center justify-center gap-1.5"
+                >
+                  <Unlock className="w-3.5 h-3.5" />
+                  <span>Secure Owner Login</span>
+                </button>
+
+                <div className="pt-2 text-center">
+                  <span className="text-[10px] text-slate-400 font-bold">
+                    Testing? Use Phone <span className="text-slate-600 font-mono font-black">9876543210</span> & Password <span className="text-slate-600 font-mono font-black">admin</span>
+                  </span>
+                </div>
+              </form>
+            ) : (
+              /* Compact Register Form */
+              <form onSubmit={handleRegister} className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">
+                    Full Name *
+                  </label>
+                  <input
+                    required
+                    type="text"
+                    value={registerName}
+                    onChange={(e) => setRegisterName(e.target.value)}
+                    placeholder="e.g. Bhaskar Senapati"
+                    className="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-[#FF5A5F] focus:bg-white text-slate-800"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">
+                    Phone Number *
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">+91</span>
+                    <input
+                      required
+                      type="tel"
+                      maxLength={10}
+                      value={registerPhone}
+                      onChange={(e) => setRegisterPhone(e.target.value.replace(/\D/g, ''))}
+                      placeholder="Enter 10-digit phone"
+                      className="w-full pl-12 pr-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-[#FF5A5F] focus:bg-white text-slate-800"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">
+                    Set Portal Password *
+                  </label>
+                  <input
+                    required
+                    type="password"
+                    value={registerPassword}
+                    onChange={(e) => setRegisterPassword(e.target.value)}
+                    placeholder="Create a strong password"
+                    className="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-[#FF5A5F] focus:bg-white text-slate-800"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black text-xs shadow-md shadow-emerald-600/20 transition flex items-center justify-center gap-1.5"
+                >
+                  <PlusCircle className="w-3.5 h-3.5" />
+                  <span>Register & Open Dashboard</span>
+                </button>
+              </form>
+            )}
+          </div>
+
+          {/* Return Home Footer */}
+          <div className="bg-slate-50 p-4 border-t border-slate-100 text-center">
+            <button
+              type="button"
+              onClick={onNavigateToExplore}
+              className="text-xs font-bold text-slate-500 hover:text-slate-800 transition"
+            >
+              ← Back to Live Listings
+            </button>
+          </div>
+
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto py-6 px-4">
       <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
         
         {/* Header */}
-        <div className="bg-gradient-to-r from-[#222222] via-[#2D2A32] to-[#222222] text-white p-6 sm:p-10">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#FF5A5F]/20 text-rose-300 text-xs font-bold mb-3 border border-[#FF5A5F]/30">
-            <ShieldCheck className="w-4 h-4 text-[#00A699]" />
-            <span>Property Owner Registration & Verification</span>
+        <div className="bg-gradient-to-r from-[#222222] via-[#2D2A32] to-[#222222] text-white p-6 sm:p-10 flex flex-col md:flex-row md:items-start justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#FF5A5F]/20 text-rose-300 text-xs font-bold mb-3 border border-[#FF5A5F]/30">
+              <ShieldCheck className="w-4 h-4 text-[#00A699]" />
+              <span>Property Owner Registration & Verification</span>
+            </div>
+            <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
+              List Your PG, Hostel, or Rental House
+            </h2>
+            <p className="text-slate-300 text-xs sm:text-base mt-2 max-w-2xl leading-relaxed">
+              Reach thousands of students and working professionals looking for verified accommodations. Zero commission, direct tenant calls & WhatsApp.
+            </p>
           </div>
-          <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-            List Your PG, Hostel, or Rental House
-          </h2>
-          <p className="text-slate-300 text-xs sm:text-base mt-2 max-w-2xl leading-relaxed">
-            Reach thousands of students and working professionals looking for verified accommodations. Zero commission, direct tenant calls & WhatsApp.
-          </p>
+          
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="self-start md:self-auto inline-flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-xl text-xs font-bold transition shadow-sm"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Logout Account</span>
+          </button>
         </div>
 
         {/* Form Container */}

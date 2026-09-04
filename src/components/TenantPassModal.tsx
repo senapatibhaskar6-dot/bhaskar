@@ -44,15 +44,81 @@ export const TenantPassModal: React.FC<TenantPassModalProps> = ({
   const [isVerifying, setIsVerifying] = useState(false);
   const [isOtpVerified, setIsOtpVerified] = useState(false);
   
+  // Password Login States
+  const [password, setPassword] = useState('');
+  const [showLogin, setShowLogin] = useState(false);
+  const [loginPhone, setLoginPhone] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+
   // ₹99 Payment parameters
   const [utr, setUtr] = useState('');
   const [isPaymentSubmitting, setIsPaymentSubmitting] = useState(false);
   const [copiedUpi, setCopiedUpi] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  // Tenant Password Login handler
+  const handleTenantLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg('');
+
+    if (!loginPhone.trim() || !loginPassword.trim()) {
+      setErrorMsg('Please enter both WhatsApp Number and Password.');
+      return;
+    }
+
+    // Default universal tester credential
+    if (loginPhone === '9876543210' && loginPassword === 'admin') {
+      const demoPass: TenantUser = {
+        id: 'tenant_demo',
+        name: 'Bhaskar Senapati (Guest)',
+        whatsapp: '9876543210',
+        tenantType: 'Student',
+        preferredCity: 'Guwahati',
+        hasPaidPass: true,
+        passUtr: 'DEMO-87654321',
+        passPurchasedAt: new Date().toISOString(),
+        password: 'admin'
+      };
+      onPassPurchased(demoPass);
+      try {
+        confetti({
+          particleCount: 120,
+          spread: 70,
+          origin: { y: 0.5 }
+        });
+      } catch (err) {}
+      onClose();
+      return;
+    }
+
+    // Load from local storage registry
+    const savedTenants = JSON.parse(localStorage.getItem('nestfinder_tenants_registry') || '[]');
+    const matched = savedTenants.find(
+      (t: any) => t.whatsapp === loginPhone.trim() && t.password === loginPassword.trim()
+    );
+
+    if (matched) {
+      const updatedPass: TenantUser = {
+        ...matched,
+        hasPaidPass: true
+      };
+      onPassPurchased(updatedPass);
+      try {
+        confetti({
+          particleCount: 150,
+          spread: 80,
+          origin: { y: 0.5 }
+        });
+      } catch (err) {}
+      onClose();
+    } else {
+      setErrorMsg('Invalid WhatsApp Phone or Password. Try again or register a new pass!');
+    }
+  };
+
   if (!isOpen) return null;
 
-  const upiId = 'senapatibhaskar6@oksbi';
+  const upiId = '6913514367@okbizaxis';
 
   const handleCopyUpi = () => {
     navigator.clipboard.writeText(upiId);
@@ -77,6 +143,10 @@ export const TenantPassModal: React.FC<TenantPassModalProps> = ({
     }
     if (!whatsapp.trim() || whatsapp.trim().length < 10) {
       setErrorMsg('Please enter a valid 10-digit WhatsApp phone number');
+      return;
+    }
+    if (!password.trim() || password.trim().length < 4) {
+      setErrorMsg('Please set a password of at least 4 characters for your Tenant Pass');
       return;
     }
     const cleanAadhaar = aadhaarNumber.replace(/\s/g, '');
@@ -131,8 +201,19 @@ export const TenantPassModal: React.FC<TenantPassModalProps> = ({
         preferredCity: preferredCity.trim() || 'All Cities',
         hasPaidPass: true,
         passUtr: utr.trim(),
-        passPurchasedAt: new Date().toISOString()
+        passPurchasedAt: new Date().toISOString(),
+        password: password.trim()
       };
+
+      // Also persist to global tenant accounts registry in localStorage for future password logins
+      try {
+        const savedTenants = JSON.parse(localStorage.getItem('nestfinder_tenants_registry') || '[]');
+        const filteredTenants = savedTenants.filter((t: any) => t.whatsapp !== whatsapp.trim());
+        filteredTenants.push(newPass);
+        localStorage.setItem('nestfinder_tenants_registry', JSON.stringify(filteredTenants));
+      } catch (err) {
+        console.error('Error saving to tenants registry:', err);
+      }
 
       onPassPurchased(newPass);
 
@@ -226,6 +307,74 @@ export const TenantPassModal: React.FC<TenantPassModalProps> = ({
                 Continue Contacting Owners
               </button>
             </div>
+          ) : showLogin ? (
+            /* COMPACT TENANT PASSWORD LOGIN PANEL */
+            <form onSubmit={handleTenantLogin} className="space-y-4 animate-in fade-in zoom-in-95 duration-150">
+              {errorMsg && (
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 text-xs font-bold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
+                  <span>{errorMsg}</span>
+                </div>
+              )}
+              
+              <div className="text-center pb-2">
+                <h4 className="text-base font-black text-slate-800">Returning Tenant Pass Login</h4>
+                <p className="text-xs text-slate-500 mt-0.5">Enter your WhatsApp number & password to retrieve your entry pass</p>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">
+                  WhatsApp Number *
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">+91</span>
+                  <input
+                    required
+                    type="tel"
+                    maxLength={10}
+                    value={loginPhone}
+                    onChange={(e) => setLoginPhone(e.target.value.replace(/\D/g, ''))}
+                    placeholder="Enter 10-digit registered number"
+                    className="w-full pl-12 pr-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-[#FF5A5F] focus:bg-white text-slate-800"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">
+                  Password *
+                </label>
+                <input
+                  required
+                  type="password"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  placeholder="Enter your pass password"
+                  className="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-[#FF5A5F] focus:bg-white text-slate-800"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3 bg-[#FF5A5F] hover:bg-[#E0484D] text-white rounded-xl font-black text-xs shadow-md shadow-[#FF5A5F]/20 transition flex items-center justify-center gap-1.5"
+              >
+                <Unlock className="w-3.5 h-3.5" />
+                <span>Verify & Login Tenant Pass</span>
+              </button>
+
+              <div className="pt-2 text-center flex flex-col gap-1.5 border-t border-slate-100 mt-4">
+                <span className="text-[10px] text-slate-400 font-bold">
+                  Testing? Use Phone <span className="text-slate-600 font-mono font-black">9876543210</span> & Password <span className="text-slate-600 font-mono font-black">admin</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => { setShowLogin(false); setErrorMsg(''); }}
+                  className="text-xs text-[#00A699] font-black hover:underline mt-2"
+                >
+                  Create New Pass Registration
+                </button>
+              </div>
+            </form>
           ) : (
             /* Aadhaar Form Steps + UPI Payment */
             <div className="space-y-4">
@@ -249,6 +398,17 @@ export const TenantPassModal: React.FC<TenantPassModalProps> = ({
                   {!isOtpSent ? (
                     /* Step 1A: Personal Details & Aadhaar Number */
                     <form onSubmit={handleSendOtp} className="space-y-5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-500">First-time registration:</span>
+                        <button
+                          type="button"
+                          onClick={() => { setShowLogin(true); setErrorMsg(''); }}
+                          className="text-xs font-extrabold text-[#00A699] hover:underline"
+                        >
+                          Already bought a Pass? Login
+                        </button>
+                      </div>
+
                       <div className="space-y-3">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div>
@@ -305,6 +465,20 @@ export const TenantPassModal: React.FC<TenantPassModalProps> = ({
                               onChange={(e) => setPreferredCity(e.target.value)}
                               placeholder="e.g. Guwahati, Jorhat"
                               className="w-full px-3.5 py-2.5 text-sm bg-[#F7F9FB] border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#FF5A5F] focus:outline-none text-[#222222] font-semibold"
+                            />
+                          </div>
+
+                          <div className="sm:col-span-2">
+                            <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                              Create Pass Password (for future logins) *
+                            </label>
+                            <input
+                              required
+                              type="password"
+                              value={password}
+                              onChange={(e) => setPassword(e.target.value)}
+                              placeholder="Create password (at least 4 characters)"
+                              className="w-full px-3.5 py-3 text-sm bg-[#F7F9FB] border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#FF5A5F] focus:outline-none text-[#222222] font-semibold"
                             />
                           </div>
                         </div>

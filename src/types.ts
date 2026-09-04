@@ -44,6 +44,7 @@ export interface TenantUser {
   hasPaidPass: boolean;
   passUtr?: string;
   passPurchasedAt?: string;
+  password?: string;
 }
 
 export interface Appointment {

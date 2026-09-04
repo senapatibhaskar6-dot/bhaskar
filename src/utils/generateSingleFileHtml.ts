@@ -356,13 +356,13 @@ export function generateSingleFileHtml(properties: Property[]): string {
             <p class="text-xs text-slate-700">Scan the official Google Pay QR code to pay ₹99 verification fee via UPI, then enter your 12-digit UTR ID.</p>
             <div class="flex flex-col sm:flex-row items-center gap-4">
               <div class="bg-[#F0F4FA] p-3.5 rounded-2xl border border-slate-200 text-center">
-                <span class="text-[11px] font-bold text-slate-800 block mb-1">Bhaskar Senapati</span>
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=upi://pay?pa=senapatibhaskar6@oksbi%26pn=Bhaskar%20Senapati%26am=99%26cu=INR%26tn=NestFinder%20Listing%20Fee" alt="Bhaskar Senapati UPI QR" class="w-36 h-36 rounded-xl bg-white p-2 border border-slate-200 mx-auto">
-                <span class="text-[11px] font-mono font-bold text-slate-900 block mt-1.5">UPI: senapatibhaskar6@oksbi</span>
+                <span class="text-[11px] font-bold text-slate-800 block mb-1">NEST FINDER</span>
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=upi://pay?pa=6913514367@okbizaxis%26pn=NEST%20FINDER%26am=99%26cu=INR%26tn=NestFinder%20Listing%20Fee" alt="NEST FINDER UPI QR" class="w-36 h-36 rounded-xl bg-white p-2 border border-slate-200 mx-auto">
+                <span class="text-[11px] font-mono font-bold text-slate-900 block mt-1.5">UPI: 6913514367@okbizaxis</span>
                 <span class="text-[10px] text-slate-500 block">Scan to pay with any UPI app</span>
               </div>
               <div class="flex-1 space-y-2">
-                <span class="text-xs font-mono font-bold text-[#222222] block">UPI ID: senapatibhaskar6@oksbi (Bhaskar Senapati)</span>
+                <span class="text-xs font-mono font-bold text-[#222222] block">UPI ID: 6913514367@okbizaxis (NEST FINDER)</span>
                 <input required id="own-utr" type="text" placeholder="Enter 12-digit UPI UTR ID" class="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-300 rounded-xl text-[#222222] font-mono font-bold">
               </div>
             </div>
@@ -416,9 +416,9 @@ export function generateSingleFileHtml(properties: Property[]): string {
           <input required id="pass-phone" type="tel" placeholder="e.g. 9876543210" class="w-full px-3 py-2 text-sm bg-[#F7F9FB] border border-slate-300 rounded-xl text-[#222222]">
         </div>
         <div class="bg-[#F0F4FA] p-4 rounded-2xl border border-slate-200 text-center space-y-2">
-          <span class="text-xs font-bold text-slate-800 block">Bhaskar Senapati</span>
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=upi://pay?pa=senapatibhaskar6@oksbi%26pn=Bhaskar%20Senapati%26am=99%26cu=INR%26tn=NestFinder%20Pass" alt="Bhaskar Senapati UPI QR" class="w-36 h-36 mx-auto rounded-xl bg-white p-2 border border-slate-200">
-          <span class="text-xs font-mono font-bold text-slate-900 block">UPI: senapatibhaskar6@oksbi (₹99)</span>
+          <span class="text-xs font-bold text-slate-800 block">NEST FINDER</span>
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=upi://pay?pa=6913514367@okbizaxis%26pn=NEST%20FINDER%26am=99%26cu=INR%26tn=NestFinder%20Pass" alt="NEST FINDER UPI QR" class="w-36 h-36 mx-auto rounded-xl bg-white p-2 border border-slate-200">
+          <span class="text-xs font-mono font-bold text-slate-900 block">UPI: 6913514367@okbizaxis (₹99)</span>
           <span class="text-[10px] text-slate-500 block">Scan to pay with any UPI app</span>
         </div>
         <div>
