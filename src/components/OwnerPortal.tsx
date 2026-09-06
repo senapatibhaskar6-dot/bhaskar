@@ -282,7 +282,7 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
               Property Successfully Listed!
             </h2>
             <p className="text-slate-600 text-sm mt-2 max-w-md mx-auto">
-              Your property <span className="font-bold text-[#222222]">"{title}"</span> is now live in the NestFinder search directory. All interested tenants must pass our <span className="font-bold text-emerald-600">Aadhaar OTP Security Verification</span> before they can contact you!
+              Your property <span className="font-bold text-[#222222]">"{title}"</span> is now live in the NestFinder search directory. All interested tenants must pass our <span className="font-bold text-emerald-600">Verified Tenant Security Registration</span> before they can contact you!
             </p>
           </div>
 
@@ -891,7 +891,7 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
                     মালিকৰ সুৰক্ষা আৰু বিশ্বাসযোগ্যতাৰ গেৰাণ্টি (Owner Safety & Safety Lock)
                   </h4>
                   <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                    আপোনাৰ নিৰাপত্তা সুৰক্ষিত ৰাখিবলৈ আমি সকলো ভাড়াতীয়া বা শিক্ষাৰ্থীৰ বাবে **Aadhaar OTP Identity Verification** বাধ্যতামূলক কৰিছোঁ। কেৱল পৰিচয় প্ৰমাণিত কৰা প্ৰকৃত ভাড়াতীয়াইহে আপোনাৰ মোবাইল আৰু হোৱাটছএপ নম্বৰ চাব পাৰিব। ইয়াৰ ফলত কোনো স্পেম, ফ্ৰড বা মধ্যভোগী দালাল আহিব নোৱাৰে!
+                    আপোনাৰ নিৰাপত্তা সুৰক্ষিত ৰাখিবলৈ আমি সকলো ভাড়াতীয়া বা শিক্ষাৰ্থীৰ বাবে **Verified Tenant Registration** বাধ্যতামূলক কৰিছোঁ। কেৱল পৰিচয় পঞ্জীয়ন কৰা প্ৰকৃত ভাড়াতীয়াইহে আপোনাৰ মোবাইল আৰু হোৱাটছএপ নম্বৰ চাব পাৰিব। ইয়াৰ ফলত কোনো স্পেম, ফ্ৰড বা মধ্যভোগী দালাল আহিব নোৱাৰে!
                   </p>
                 </div>
               </div>
@@ -903,7 +903,7 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
                 </div>
                 <div className="flex items-center gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
                   <ShieldCheck className="w-4.5 h-4.5 text-emerald-600 shrink-0" />
-                  <span>Only Aadhaar Verified Tenants Can Call</span>
+                  <span>Only Verified Pass Tenants Can Call</span>
                 </div>
               </div>
             </div>

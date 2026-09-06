@@ -10,7 +10,7 @@ interface UpiPaymentQrCardProps {
 }
 
 export const UpiPaymentQrCard: React.FC<UpiPaymentQrCardProps> = ({
-  amount = 99,
+  amount = 49,
   note = 'NestFinder Pass',
   className = '',
   showCopyButton = true

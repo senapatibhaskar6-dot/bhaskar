@@ -327,21 +327,21 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
               </div>
             </div>
           ) : (
-            /* LOCKED STATE (Aadhaar Security & Fee Requirement) */
+            /* LOCKED STATE (Registration & ₹49 Fee Requirement) */
             <div className="bg-gradient-to-r from-amber-50 via-[#F7F9FB] to-amber-50/50 border border-amber-200 rounded-2xl p-4 text-center">
               <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-amber-800 mb-1">
                 <Lock className="w-4 h-4 text-[#FF5A5F]" />
                 <span className="font-extrabold">Address & Owner Contact Locked</span>
               </div>
               <p className="text-[11px] text-slate-600 mb-3 leading-relaxed">
-                Verify your Aadhaar details via OTP and pay the ₹99 one-time registration fee to get 30-Day unlimited access to direct owner numbers, exact street addresses, and WhatsApp chats.
+                Complete quick registration and pay the ₹49 one-time pass fee to get 30-Day unlimited access to direct owner phone numbers, exact street addresses, and instant WhatsApp chats.
               </p>
               <button
                 onClick={onOpenPassModal}
                 className="w-full py-2.5 px-4 rounded-xl font-black text-xs bg-[#FF5A5F] hover:bg-[#E0484D] text-white shadow-md shadow-[#FF5A5F]/20 transition flex items-center justify-center gap-2 group animate-pulse"
               >
                 <Unlock className="w-3.5 h-3.5" />
-                <span>Get Student & Tenant Pass (₹99)</span>
+                <span>Get Student & Tenant Pass (₹49)</span>
                 <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>

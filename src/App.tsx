@@ -316,11 +316,11 @@ export default function App() {
                         Addresses & Owner Phone Numbers are Locked
                       </h3>
                       <span className="px-2.5 py-0.5 text-[10px] font-black uppercase bg-[#FF5A5F] text-white rounded-full">
-                        ₹99 Pass
+                        ₹49 Pass
                       </span>
                     </div>
                     <p className="text-xs sm:text-sm text-slate-600 mt-0.5 leading-relaxed">
-                      Property titles, locations & photos are free to search. Verify your Aadhaar OTP and complete registration to unlock direct owner contacts and exact street addresses with a 30-Day Tenant & Student Pass.
+                      Property titles, locations & photos are free to search. Complete quick registration to unlock direct owner phone numbers and exact street addresses with a 30-Day Tenant & Student Pass.
                     </p>
                   </div>
                 </div>
@@ -330,7 +330,7 @@ export default function App() {
                   className="w-full md:w-auto px-6 py-3 rounded-2xl font-black text-sm bg-[#FF5A5F] hover:bg-[#E0484D] text-white shadow-md shadow-[#FF5A5F]/25 transition flex items-center justify-center gap-2 shrink-0 animate-pulse"
                 >
                   <Unlock className="w-4 h-4" />
-                  <span>Get Tenant & Student Pass (₹99)</span>
+                  <span>Get Tenant & Student Pass (₹49)</span>
                 </button>
               </div>
             )}
@@ -434,7 +434,7 @@ export default function App() {
                   className="hover:text-emerald-300 transition flex items-center gap-1.5 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]"
                 >
                   <Sparkles className="w-3 h-3 text-amber-400" />
-                  Get ₹99 Tenant Pass
+                  Get ₹49 Tenant Pass
                 </button>
               </li>
               <li>
@@ -480,7 +480,7 @@ export default function App() {
               Safety & Verification
             </h4>
             <p className="text-xs text-slate-100 leading-relaxed mb-3 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
-              Owners list for free. Tenants undergo mandatory secure Aadhaar OTP verification to prevent fake inquiries and spam, keeping the community safe.
+              Owners list for 100% free. Tenants undergo registered pass verification to prevent fake inquiries and spam, keeping the community safe.
             </p>
             <div className="flex items-center gap-1.5 text-xs text-emerald-300 font-bold bg-white/15 px-3 py-1.5 rounded-lg border border-white/25 w-fit backdrop-blur-sm shadow-md">
               <ShieldCheck className="w-4 h-4 text-[#00E676]" />

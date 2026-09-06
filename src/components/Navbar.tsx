@@ -28,7 +28,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="bg-[#222222] text-white text-xs py-2 px-4 text-center font-medium flex items-center justify-center gap-2 border-b border-white/5">
         <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
         <span className="truncate">
-          100% Free Owner Listings • Zero Brokerage • Aadhaar OTP Secured Tenants • Direct Owner Contacts Unlocked!
+          100% Free Owner Listings • Zero Brokerage • Verified Direct Tenants • Direct Owner Contacts Unlocked!
         </span>
       </div>
 
@@ -87,7 +87,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             ) : (
               <>
                 <Key className="w-4 h-4" />
-                <span className="hidden sm:inline">Tenant & Student Entry Pass (₹99)</span>
+                <span className="hidden sm:inline">Tenant & Student Entry Pass (₹49)</span>
                 <span className="hidden xs:inline sm:hidden">Tenant & Student Entry</span>
                 <span className="xs:hidden">Tenant & Student Entry</span>
               </>

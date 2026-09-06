@@ -9,7 +9,7 @@ export function generateSingleFileHtml(properties: Property[]): string {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NestFinder - PG, Private Hostels & Rent Houses</title>
-  <meta name="description" content="Find verified PGs, private hostels, and rental houses with direct owner contacts and instant ₹99 pass.">
+  <meta name="description" content="Find verified PGs, private hostels, and rental houses with direct owner contacts and instant ₹49 pass.">
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
@@ -39,7 +39,7 @@ export function generateSingleFileHtml(properties: Property[]): string {
   <!-- TOP ANNOUNCEMENT BAR -->
   <div class="bg-[#222222] text-white text-xs sm:text-sm py-2 px-4 text-center font-medium shadow-sm flex items-center justify-center gap-2 border-b border-white/5">
     <span class="inline-block w-2 h-2 rounded-full bg-[#00A699] animate-pulse"></span>
-    <span>Zero Brokerage Verified Listings • Student & Tenant Pass for ₹99 Only • Direct WhatsApp & Calls</span>
+    <span>Zero Brokerage Verified Listings • Student & Tenant Pass for ₹49 Only • Direct WhatsApp & Calls</span>
   </div>
 
   <!-- MAIN HEADER & BRANDING -->
@@ -90,7 +90,7 @@ export function generateSingleFileHtml(properties: Property[]): string {
         </button>
         <button id="nav-pass-btn" onclick="openTenantPassModal()" class="px-2 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-[#FFB400] hover:bg-amber-500 text-[#222222] shadow-sm flex items-center gap-1 shrink-0">
           <i data-lucide="key" class="w-4 h-4"></i>
-          <span id="pass-btn-text" class="hidden sm:inline">Students & Tenants Listing (₹99)</span>
+          <span id="pass-btn-text" class="hidden sm:inline">Students & Tenants Listing (₹49)</span>
           <span class="sm:hidden mobile-compact-hidden">Tenants & Students</span>
           <span class="mobile-compact-show">Tenant Pass</span>
         </button>
@@ -226,16 +226,16 @@ export function generateSingleFileHtml(properties: Property[]): string {
           <div>
             <div class="flex items-center gap-2">
               <h3 class="font-extrabold text-[#222222] text-base sm:text-lg">Owner Contact Numbers are Locked</h3>
-              <span class="px-2.5 py-0.5 text-[10px] font-black uppercase bg-[#FFB400] text-[#222222] rounded-full">₹99 Pass</span>
+              <span class="px-2.5 py-0.5 text-[10px] font-black uppercase bg-[#FFB400] text-[#222222] rounded-full">₹49 Pass</span>
             </div>
             <p class="text-xs sm:text-sm text-slate-600 mt-0.5">
-              Property titles, addresses & 4 real photos are free to view. Unlock direct owner phone calls & WhatsApp access with a ₹99 one-time student pass.
+              Property titles, addresses & 4 real photos are free to view. Unlock direct owner phone calls & WhatsApp access with a ₹49 one-time student pass.
             </p>
           </div>
         </div>
         <button onclick="openTenantPassModal()" class="w-full md:w-auto px-6 py-3 rounded-2xl font-black text-sm bg-[#FF5A5F] hover:bg-[#E0484D] text-white shadow-md shadow-[#FF5A5F]/25 transition flex items-center justify-center gap-2 shrink-0">
           <i data-lucide="unlock" class="w-4 h-4"></i>
-          <span>Students & Tenants Listing Pass (₹99)</span>
+          <span>Students & Tenants Listing Pass (₹49)</span>
         </button>
       </div>
 
@@ -394,14 +394,14 @@ export function generateSingleFileHtml(properties: Property[]): string {
     </div>
   </footer>
 
-  <!-- TENANT PASS MODAL (₹99) -->
+  <!-- TENANT PASS MODAL (₹49) -->
   <div id="tenant-pass-modal" onclick="if(event.target === this) closeTenantPassModal()" class="hidden fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 cursor-pointer">
     <div class="bg-white rounded-3xl max-w-md w-full shadow-2xl overflow-hidden border border-slate-200 cursor-default">
       <div class="bg-gradient-to-r from-[#FF5A5F] via-[#FF7E82] to-[#FFB400] p-6 text-white relative">
         <button onclick="closeTenantPassModal()" class="absolute top-4 right-4 text-white/80 hover:text-white bg-black/20 p-2 rounded-full">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
-        <span class="px-2.5 py-1 rounded-full bg-white/20 text-white text-xs font-bold mb-2 inline-block">₹99 Tenant Pass</span>
+        <span class="px-2.5 py-1 rounded-full bg-white/20 text-white text-xs font-bold mb-2 inline-block">₹49 Tenant Pass</span>
         <h3 class="text-2xl font-black tracking-tight">Students & Tenants: Direct Listing Access</h3>
         <p class="text-white/90 text-xs mt-1">Get direct phone numbers, WhatsApp chats & visit bookings.</p>
       </div>
@@ -417,8 +417,8 @@ export function generateSingleFileHtml(properties: Property[]): string {
         </div>
         <div class="bg-[#F0F4FA] p-4 rounded-2xl border border-slate-200 text-center space-y-2">
           <span class="text-xs font-bold text-slate-800 block">NEST FINDER</span>
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=upi://pay?pa=6913514367@okbizaxis%26pn=NEST%20FINDER%26am=99%26cu=INR%26tn=NestFinder%20Pass" alt="NEST FINDER UPI QR" class="w-36 h-36 mx-auto rounded-xl bg-white p-2 border border-slate-200">
-          <span class="text-xs font-mono font-bold text-slate-900 block">UPI: 6913514367@okbizaxis (₹99)</span>
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=upi://pay?pa=6913514367@okbizaxis%26pn=NEST%20FINDER%26am=49%26cu=INR%26tn=NestFinder%20Pass" alt="NEST FINDER UPI QR" class="w-36 h-36 mx-auto rounded-xl bg-white p-2 border border-slate-200">
+          <span class="text-xs font-mono font-bold text-slate-900 block">UPI: 6913514367@okbizaxis (₹49)</span>
           <span class="text-[10px] text-slate-500 block">Scan to pay with any UPI app</span>
         </div>
         <div>
@@ -426,7 +426,7 @@ export function generateSingleFileHtml(properties: Property[]): string {
           <input required id="pass-utr" type="text" placeholder="e.g. 423189098712" class="w-full px-3 py-2 text-sm bg-[#F7F9FB] border border-slate-300 rounded-xl text-[#222222] font-mono font-bold">
         </div>
         <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-[#FF5A5F] to-[#FF7E82] text-white rounded-xl font-bold text-sm shadow-md shadow-[#FF5A5F]/25">
-          Verify UTR & Unlock All Contacts (₹99)
+          Verify UTR & Unlock All Contacts (₹49)
         </button>
         <button type="button" onclick="closeTenantPassModal()" class="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold rounded-xl text-xs transition mt-1">
           Cancel & Go Back to Home Screen
@@ -621,9 +621,9 @@ export function generateSingleFileHtml(properties: Property[]): string {
                     <div class="flex items-center justify-center gap-1 text-xs font-bold text-amber-950 mb-1">
                       <i data-lucide="lock" class="w-3.5 h-3.5 text-[#FF5A5F]"></i> Owner Contact Numbers Locked
                     </div>
-                    <p class="text-[11px] text-amber-900/80 mb-2.5">Unlock phone & WhatsApp with ₹99 student pass.</p>
+                    <p class="text-[11px] text-amber-900/80 mb-2.5">Unlock phone & WhatsApp with ₹49 student pass.</p>
                     <button onclick="openTenantPassModal()" class="w-full py-2 bg-[#FF5A5F] hover:bg-[#E0484D] text-white rounded-xl font-black text-xs shadow-md flex items-center justify-center gap-1.5">
-                      <i data-lucide="unlock" class="w-3.5 h-3.5"></i> Students & Tenants Listing (₹99)
+                      <i data-lucide="unlock" class="w-3.5 h-3.5"></i> Students & Tenants Listing (₹49)
                     </button>
                   </div>
                 \`}

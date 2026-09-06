@@ -209,7 +209,7 @@ CREATE TABLE IF NOT EXISTS public.properties (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 2. Tenant Passes Table (Students & Tenants with ₹99 pass)
+-- 2. Tenant Passes Table (Students & Tenants with ₹49 pass)
 CREATE TABLE IF NOT EXISTS public.tenant_passes (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -241,7 +241,7 @@ CREATE TABLE IF NOT EXISTS public.payments (
     user_type TEXT NOT NULL, -- 'tenant' or 'owner'
     name TEXT NOT NULL,
     phone TEXT NOT NULL,
-    amount NUMERIC DEFAULT 99,
+    amount NUMERIC DEFAULT 49,
     utr TEXT NOT NULL,
     reference_id TEXT NOT NULL,
     property_id TEXT,
