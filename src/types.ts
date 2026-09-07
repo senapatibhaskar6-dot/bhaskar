@@ -79,3 +79,14 @@ export interface PaymentRecord {
   timestamp: string;
   status: 'verified' | 'pending';
 }
+
+export interface AppReview {
+  id: string;
+  name: string;
+  userType: 'Student' | 'Working Professional' | 'Property Owner' | 'Family' | 'Tenant';
+  city: string;
+  rating: number; // 1 to 5
+  comment: string;
+  createdAt: string;
+  isVerified: boolean;
+}

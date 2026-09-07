@@ -8,14 +8,18 @@ import { AppointmentModal } from './components/AppointmentModal';
 import { GalleryModal } from './components/GalleryModal';
 import { SupabaseModal } from './components/SupabaseModal';
 import { ExportHtmlModal } from './components/ExportHtmlModal';
+import { AppReviewModal } from './components/AppReviewModal';
+import { AppReviewsSection } from './components/AppReviewsSection';
 import { NestFinderLogo } from './components/NestFinderLogo';
 import footerBg from './assets/images/footer_architecture_bg_1788145106193.jpg';
 import { INITIAL_PROPERTIES } from './data/initialProperties';
-import { Property, TenantUser, Appointment, SupabaseConfig } from './types';
+import { INITIAL_APP_REVIEWS } from './data/initialReviews';
+import { Property, TenantUser, Appointment, SupabaseConfig, AppReview } from './types';
 import {
   syncPropertyToSupabase,
   syncTenantPassToSupabase,
   syncAppointmentToSupabase,
+  syncReviewToSupabase,
   fetchRemoteProperties
 } from './services/supabase';
 import {
@@ -28,7 +32,8 @@ import {
   Calendar,
   Building,
   Home,
-  MessageSquare
+  MessageSquare,
+  Star
 } from 'lucide-react';
 
 export default function App() {
@@ -70,18 +75,31 @@ export default function App() {
   });
 
   const [supabaseConfig, setSupabaseConfig] = useState<SupabaseConfig>(() => {
+    const defaultUrl = 'https://mixvszpbsgmdyegtsdjw.supabase.co';
+    const defaultAnonKey = 'sb_publishable_bG6Ppv3qNB0EJBn96Ykr7A_MDzYyqN1';
+
     const saved = localStorage.getItem('nestfinder_supabase_config');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (!parsed.url || !parsed.anonKey) {
+          return {
+            url: import.meta.env.VITE_SUPABASE_URL || defaultUrl,
+            anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || defaultAnonKey,
+            isConnected: true
+          };
+        }
+        return parsed;
       } catch (e) {
         console.error(e);
       }
     }
+    const envUrl = import.meta.env.VITE_SUPABASE_URL || defaultUrl;
+    const envAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || defaultAnonKey;
     return {
-      url: '',
-      anonKey: '',
-      isConnected: false
+      url: envUrl,
+      anonKey: envAnonKey,
+      isConnected: Boolean(envUrl && envAnonKey)
     };
   });
 
@@ -97,13 +115,38 @@ export default function App() {
   const [isPassModalOpen, setIsPassModalOpen] = useState(false);
   const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [galleryProperty, setGalleryProperty] = useState<Property | null>(null);
   const [appointmentProperty, setAppointmentProperty] = useState<Property | null>(null);
+
+  // --- App Community Reviews ---
+  const [reviews, setReviews] = useState<AppReview[]>(() => {
+    const saved = localStorage.getItem('nestfinder_app_reviews');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return INITIAL_APP_REVIEWS;
+  });
+
+  const handleAddReview = (newReview: AppReview) => {
+    setReviews((prev) => [newReview, ...prev]);
+    if (supabaseConfig.isConnected) {
+      syncReviewToSupabase(newReview, supabaseConfig).catch(() => {});
+    }
+  };
 
   // --- Sync to LocalStorage on changes ---
   useEffect(() => {
     localStorage.setItem('nestfinder_properties', JSON.stringify(properties));
   }, [properties]);
+
+  useEffect(() => {
+    localStorage.setItem('nestfinder_app_reviews', JSON.stringify(reviews));
+  }, [reviews]);
 
   useEffect(() => {
     if (tenantPass) {
@@ -251,6 +294,8 @@ export default function App() {
         onOpenPassModal={() => setIsPassModalOpen(true)}
         onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
         onOpenExportModal={() => setIsExportModalOpen(true)}
+        onOpenReviewModal={() => setIsReviewModalOpen(true)}
+        reviewCount={reviews.length}
       />
 
       {/* Main View Body */}
@@ -382,6 +427,12 @@ export default function App() {
               </div>
             )}
 
+            {/* NestFinder App Community Reviews & Rating Section */}
+            <AppReviewsSection
+              reviews={reviews}
+              onOpenReviewModal={() => setIsReviewModalOpen(true)}
+            />
+
           </main>
         </>
       ) : (
@@ -450,6 +501,15 @@ export default function App() {
               <li>
                 <button onClick={() => setActiveTab('explore')} className="hover:text-emerald-300 transition drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
                   Independent Houses
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => setIsReviewModalOpen(true)}
+                  className="hover:text-amber-300 transition flex items-center gap-1.5 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] text-amber-200 font-bold"
+                >
+                  <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                  App Reviews & Ratings (4.9★)
                 </button>
               </li>
             </ul>
@@ -526,6 +586,13 @@ export default function App() {
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
         properties={properties}
+      />
+
+      <AppReviewModal
+        isOpen={isReviewModalOpen}
+        onClose={() => setIsReviewModalOpen(false)}
+        reviews={reviews}
+        onAddReview={handleAddReview}
       />
 
     </div>

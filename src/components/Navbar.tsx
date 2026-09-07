@@ -1,5 +1,5 @@
 import React from 'react';
-import { PlusCircle, Key, Database, Download, CheckCircle2 } from 'lucide-react';
+import { PlusCircle, Key, Database, Download, CheckCircle2, Star } from 'lucide-react';
 import { TenantUser } from '../types';
 import { NestFinderLogo } from './NestFinderLogo';
 
@@ -10,6 +10,8 @@ interface NavbarProps {
   onOpenPassModal: () => void;
   onOpenSupabaseModal: () => void;
   onOpenExportModal: () => void;
+  onOpenReviewModal: () => void;
+  reviewCount?: number;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -18,7 +20,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   tenantPass,
   onOpenPassModal,
   onOpenSupabaseModal,
-  onOpenExportModal
+  onOpenExportModal,
+  onOpenReviewModal,
+  reviewCount = 5
 }) => {
   const isPassActive = tenantPass?.hasPaidPass;
 
@@ -52,6 +56,19 @@ export const Navbar: React.FC<NavbarProps> = ({
             }`}
           >
             Explore
+          </button>
+
+          {/* App Reviews Button */}
+          <button
+            onClick={onOpenReviewModal}
+            className="px-2 sm:px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1 sm:gap-1.5 bg-amber-50/90 hover:bg-amber-100 text-amber-900 border border-amber-200/90 shadow-2xs shrink-0"
+            title="NestFinder App Community Reviews & Rating"
+          >
+            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500 shrink-0" />
+            <span className="hidden sm:inline">Reviews</span>
+            <span className="text-[10px] sm:text-xs font-black text-amber-950 bg-amber-200/90 px-1.5 py-0.5 rounded-md">
+              4.9★
+            </span>
           </button>
 
           <button

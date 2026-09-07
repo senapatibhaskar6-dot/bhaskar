@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { Property, TenantUser, Appointment, PaymentRecord, SupabaseConfig } from '../types';
+import { Property, TenantUser, Appointment, PaymentRecord, SupabaseConfig, AppReview } from '../types';
 
 let cachedClient: SupabaseClient | null = null;
 let currentConfigKey = '';
@@ -144,6 +144,33 @@ export async function syncAppointmentToSupabase(appointment: Appointment, config
     return true;
   } catch (err) {
     console.warn('Supabase appointment error:', err);
+    return false;
+  }
+}
+
+export async function syncReviewToSupabase(review: AppReview, config: SupabaseConfig): Promise<boolean> {
+  const client = getSupabaseClient(config);
+  if (!client) return false;
+
+  try {
+    const { error } = await client.from('app_reviews').upsert({
+      id: review.id,
+      name: review.name,
+      user_type: review.userType,
+      city: review.city,
+      rating: review.rating,
+      comment: review.comment,
+      is_verified: review.isVerified,
+      created_at: review.createdAt
+    });
+
+    if (error) {
+      console.warn('Supabase review sync warning:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Supabase review error:', err);
     return false;
   }
 }
