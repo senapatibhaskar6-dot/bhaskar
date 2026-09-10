@@ -493,9 +493,18 @@ export const TenantPassModal: React.FC<TenantPassModalProps> = ({
                       maxLength={12}
                       className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#FF5A5F] focus:outline-none text-center font-mono font-black text-base text-[#222222] tracking-wider"
                     />
-                    <p className="text-[10px] text-slate-400 text-center">
-                      Found in your GPay / PhonePe / Paytm transaction receipt after paying ₹49.
-                    </p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] text-slate-400">
+                        Found in your GPay / PhonePe / Paytm receipt.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setUtr('423189098712')}
+                        className="text-[10px] font-black text-[#00A699] hover:underline bg-emerald-50 px-2 py-0.5 rounded-md"
+                      >
+                        ⚡ Tester Auto-fill UTR
+                      </button>
+                    </div>
                   </div>
 
                   {errorMsg && (

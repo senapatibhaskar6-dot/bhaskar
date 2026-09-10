@@ -1,16 +1,25 @@
 {
+  "id": "com.nestfinder.app",
   "short_name": "NestFinder",
-  "name": "NestFinder - PG & Rentals",
+  "name": "NestFinder - PG, Hostels & Rentals",
+  "description": "PG, Private Hostel, and Rental House Finder platform in Assam.",
   "icons": [
     {
-      "src": "/logo.jpg?v=4",
-      "type": "image/jpeg",
-      "sizes": "192x192"
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
     },
     {
       "src": "/logo.jpg?v=4",
       "type": "image/jpeg",
-      "sizes": "512x512"
+      "sizes": "1024x1024"
     }
   ],
   "start_url": "/",

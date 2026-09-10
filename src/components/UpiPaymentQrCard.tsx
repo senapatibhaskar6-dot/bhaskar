@@ -112,6 +112,20 @@ export const UpiPaymentQrCard: React.FC<UpiPaymentQrCardProps> = ({
         </div>
       </div>
 
+      {/* Direct 1-Click Pay for Mobile Devices (No scanning needed) */}
+      <div className="w-full max-w-[260px] mb-3">
+        <a
+          href={upiUrl}
+          className="w-full py-2.5 px-3 bg-gradient-to-r from-[#00A699] to-[#00847A] hover:opacity-95 text-white rounded-xl font-black text-xs shadow-md flex items-center justify-center gap-1.5 transition active:scale-98"
+        >
+          <span className="text-sm">⚡</span>
+          <span>Pay via GPay / PhonePe / Paytm</span>
+        </a>
+        <p className="text-[9px] text-slate-400 text-center mt-1 font-medium">
+          Mobile user? Tap above to open UPI app directly.
+        </p>
+      </div>
+
       {/* Optional Copy UPI ID button */}
       {showCopyButton && (
         <button
