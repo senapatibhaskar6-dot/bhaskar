@@ -11,6 +11,7 @@ import { ExportHtmlModal } from './components/ExportHtmlModal';
 import { AppReviewModal } from './components/AppReviewModal';
 import { AppReviewsSection } from './components/AppReviewsSection';
 import { NestFinderLogo } from './components/NestFinderLogo';
+import { SplashScreen } from './components/SplashScreen';
 import footerBg from './assets/images/footer_architecture_bg_1788145106193.jpg';
 import { INITIAL_PROPERTIES } from './data/initialProperties';
 import { INITIAL_APP_REVIEWS } from './data/initialReviews';
@@ -105,6 +106,15 @@ export default function App() {
 
   // --- Navigation & View States ---
   const [activeTab, setActiveTab] = useState<'explore' | 'owner'>('explore');
+
+  // --- Mobile Launch Splash Screen ---
+  const [showSplash, setShowSplash] = useState(() => {
+    // Show splash on initial launch of session
+    const shown = sessionStorage.getItem('nestfinder_splash_shown');
+    if (shown) return false;
+    sessionStorage.setItem('nestfinder_splash_shown', 'true');
+    return true;
+  });
 
   // --- Search & Filters ---
   const [cityFilter, setCityFilter] = useState('');
@@ -594,6 +604,9 @@ export default function App() {
         reviews={reviews}
         onAddReview={handleAddReview}
       />
+
+      {/* Mobile Launch Splash Screen */}
+      {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} minDurationMs={1200} />}
 
     </div>
   );
