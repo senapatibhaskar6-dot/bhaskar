@@ -43,7 +43,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
       {/* Center Branding Content */}
       <div className="flex flex-col items-center justify-center text-center animate-in fade-in zoom-in-95 duration-500">
         <div className="relative">
-          <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-gradient-to-tr from-rose-500/10 to-amber-500/10 p-2 shadow-xl shadow-rose-500/10 border border-slate-100 flex items-center justify-center">
+          <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl p-1.5 shadow-2xl shadow-slate-950/20 border border-slate-200/80 bg-slate-900 flex items-center justify-center overflow-hidden">
             <img
               src="/icon-192.png"
               alt="NestFinder Logo"
@@ -52,14 +52,14 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
             />
           </div>
           {/* Subtle pulse ring */}
-          <div className="absolute -inset-2 rounded-[28px] border-2 border-[#FF5A5F]/20 animate-ping pointer-events-none" />
+          <div className="absolute -inset-2 rounded-[32px] border-2 border-amber-400/20 animate-ping pointer-events-none" />
         </div>
 
         <h1 className="mt-5 text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-sans">
           Nest<span className="text-[#FF5A5F]">Finder</span>
         </h1>
-        <p className="mt-1.5 text-xs sm:text-sm font-bold text-slate-500 max-w-[240px]">
-          PG, Private Hostels & Rental House Finder in Assam
+        <p className="mt-1.5 text-xs sm:text-sm font-bold text-slate-500 max-w-[260px]">
+          PG, Private Hostels & Rental House Finder
         </p>
 
         {/* Loading indicator */}
@@ -72,7 +72,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
       {/* Bottom tagline */}
       <div className="text-center">
         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-          Guwahati • Jorhat • Dibrugarh • Assam
+          Verified Stays • Pan-India Network
         </p>
       </div>
     </div>

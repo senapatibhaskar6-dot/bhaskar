@@ -28,13 +28,13 @@ export const AppReviewsSection: React.FC<AppReviewsSectionProps> = ({
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-200/80 text-amber-800 text-xs font-bold mb-2">
               <Sparkles className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-              <span>Verified Assam Community Ratings</span>
+              <span>Verified Community Ratings</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
               What Tenants & Owners Say About NestFinder
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 mt-1">
-              Zero brokers, direct phone contacts, and 100% free owner registrations across Assam.
+              Zero brokers, direct phone contacts, and 100% free owner registrations across India.
             </p>
           </div>
 
@@ -119,7 +119,7 @@ export const AppReviewsSection: React.FC<AppReviewsSectionProps> = ({
         <div className="mt-6 pt-4 border-t border-slate-200/50 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-600">
           <div className="flex items-center gap-1.5 font-medium">
             <Heart className="w-3.5 h-3.5 text-[#FF5A5F] fill-[#FF5A5F]" />
-            <span>Over 2,500+ students & working professionals in Assam found homes through NestFinder.</span>
+            <span>Over 2,500+ students & working professionals across India found homes through NestFinder.</span>
           </div>
           <button
             onClick={onOpenReviewModal}

@@ -29,7 +29,7 @@ export const AppReviewModal: React.FC<AppReviewModalProps> = ({
   const [hoverRating, setHoverRating] = useState<number>(0);
   const [name, setName] = useState<string>('');
   const [userType, setUserType] = useState<AppReview['userType']>('Student');
-  const [city, setCity] = useState<string>('Guwahati');
+  const [city, setCity] = useState<string>('');
   const [comment, setComment] = useState<string>('');
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
   const [filterRating, setFilterRating] = useState<number | 'ALL'>('ALL');
@@ -54,7 +54,7 @@ export const AppReviewModal: React.FC<AppReviewModalProps> = ({
       id: `rev-${Date.now()}`,
       name: name.trim(),
       userType,
-      city: city.trim() || 'Assam',
+      city: city.trim() || 'India',
       rating,
       comment: comment.trim(),
       createdAt: new Date().toISOString(),
@@ -123,7 +123,7 @@ export const AppReviewModal: React.FC<AppReviewModalProps> = ({
                 </span>
               </div>
               <p className="text-xs text-slate-300 mt-0.5">
-                Real ratings & feedback from students, tenants, and property owners in Assam
+                Real ratings & feedback from students, tenants, and property owners across India
               </p>
             </div>
           </div>
@@ -260,12 +260,12 @@ export const AppReviewModal: React.FC<AppReviewModalProps> = ({
                   {/* City or Area */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      City / Area in Assam *
+                      City / Area *
                     </label>
                     <input
                       type="text"
                       required
-                      placeholder="e.g., Guwahati (Beltola), Jorhat, Dibrugarh, etc."
+                      placeholder="e.g., Guwahati, Bangalore, Delhi, Pune, etc."
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
                       className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#FF5A5F]/20 focus:border-[#FF5A5F] outline-hidden transition font-medium"
@@ -390,7 +390,7 @@ export const AppReviewModal: React.FC<AppReviewModalProps> = ({
                     </p>
 
                     <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400">
-                      <span>Assam Verified Community</span>
+                      <span>Verified Community Member</span>
                       <span>
                         {new Date(rev.createdAt).toLocaleDateString('en-IN', {
                           month: 'short',

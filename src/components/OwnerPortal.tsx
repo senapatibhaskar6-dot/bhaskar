@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Building,
   Upload,
@@ -19,7 +19,11 @@ import {
   Layers,
   Lock,
   Unlock,
-  LogOut
+  LogOut,
+  Camera,
+  Info,
+  X,
+  Trash2
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Property, PropertyType, SharingType } from '../types';
@@ -168,20 +172,144 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
   const [formError, setFormError] = useState('');
   const [submittedSuccess, setSubmittedSuccess] = useState(false);
 
+  // Photo Upload & Validation States
+  const [photoUploadError, setPhotoUploadError] = useState('');
+  const [photoUploadSuccess, setPhotoUploadSuccess] = useState('');
+  const [isProcessingPhoto, setIsProcessingPhoto] = useState(false);
+  const [activePickerIndex, setActivePickerIndex] = useState<number | null>(null);
+  const [photoMeta, setPhotoMeta] = useState<{ [key: number]: { name: string; size: string } }>({});
+
+  // Client-side image resizing and compression for camera photos (often 8MB - 25MB on modern phones)
+  const compressImage = (file: File): Promise<{ dataUrl: string; size: string; name: string }> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const reader = new FileReader();
+
+      reader.onerror = () => reject(new Error('Failed to read file from camera.'));
+      reader.onload = (e) => {
+        img.onerror = () => reject(new Error('Invalid image data.'));
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            const MAX_DIM = 1600; // Optimal 1600px dimension preserves full HD detail while keeping file under ~400KB
+            let width = img.naturalWidth || img.width;
+            let height = img.naturalHeight || img.height;
+
+            if (width > MAX_DIM || height > MAX_DIM) {
+              if (width > height) {
+                height = Math.round((height * MAX_DIM) / width);
+                width = MAX_DIM;
+              } else {
+                width = Math.round((width * MAX_DIM) / height);
+                height = MAX_DIM;
+              }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+              // Fallback to original reader result if canvas not supported
+              resolve({
+                dataUrl: e.target?.result as string,
+                size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+                name: file.name
+              });
+              return;
+            }
+
+            // Draw image with smoothing
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // Compress to standard JPEG at 0.82 quality
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+            // Calculate approximate size
+            const head = 'data:image/jpeg;base64,';
+            const approxBytes = Math.round(((compressedDataUrl.length - head.length) * 3) / 4);
+            const formattedSize = approxBytes < 1024 * 1024
+              ? `${Math.round(approxBytes / 1024)} KB`
+              : `${(approxBytes / (1024 * 1024)).toFixed(1)} MB`;
+
+            resolve({
+              dataUrl: compressedDataUrl,
+              size: formattedSize,
+              name: file.name.replace(/\.[^/.]+$/, "") + '.jpg'
+            });
+          } catch (err) {
+            // If canvas fails, fallback to direct dataUrl
+            resolve({
+              dataUrl: e.target?.result as string,
+              size: `${(file.size / 1024).toFixed(0)} KB`,
+              name: file.name
+            });
+          }
+        };
+        img.src = e.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const validateAndProcessFile = async (file: File, index: number) => {
+    setPhotoUploadError('');
+    setPhotoUploadSuccess('');
+    setIsProcessingPhoto(true);
+
+    try {
+      // 1. Format validation: allow image/* or check extension
+      const isImage = file.type ? file.type.startsWith('image/') : true;
+      const fileExtension = '.' + (file.name.split('.').pop()?.toLowerCase() || '');
+      const validExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif', '.bmp', '.jfif'];
+      const hasValidExt = validExtensions.includes(fileExtension);
+
+      if (!isImage && !hasValidExt) {
+        setPhotoUploadError(
+          `Invalid file format for "${file.name}". Please upload a photo (JPG, PNG, WEBP).`
+        );
+        setIsProcessingPhoto(false);
+        return false;
+      }
+
+      // 2. Compress image automatically so even 15MB-25MB camera shots load instantly
+      const processed = await compressImage(file);
+
+      setPhotos((prev) => {
+        const next = [...prev] as [string, string, string, string];
+        next[index] = processed.dataUrl;
+        return next;
+      });
+
+      setPhotoMeta((prev) => ({
+        ...prev,
+        [index]: { name: processed.name, size: processed.size }
+      }));
+
+      setPhotoUploadSuccess(
+        `Photo ${index + 1} captured & processed successfully (${processed.size})!`
+      );
+      setActivePickerIndex(null);
+
+      setTimeout(() => {
+        setPhotoUploadSuccess('');
+      }, 4000);
+      return true;
+    } catch (err: any) {
+      console.error('Photo upload error:', err);
+      setPhotoUploadError('Could not process camera photo. Please try choosing from Gallery or take again.');
+      return false;
+    } finally {
+      setIsProcessingPhoto(false);
+    }
+  };
+
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (uploadEvent) => {
-      const result = uploadEvent.target?.result as string;
-      setPhotos((prev) => {
-        const next = [...prev] as [string, string, string, string];
-        next[index] = result;
-        return next;
-      });
-    };
-    reader.readAsDataURL(file);
+    validateAndProcessFile(file, index);
+    // Reset file input target value so selecting the same file triggers onChange
+    e.target.value = '';
   };
 
   const handleApplySamplePresets = () => {
@@ -191,6 +319,10 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
       SAMPLE_PHOTO_PRESETS[2].url,
       SAMPLE_PHOTO_PRESETS[3].url
     ]);
+    setPhotoMeta({});
+    setPhotoUploadError('');
+    setPhotoUploadSuccess('Default high-resolution samples filled!');
+    setTimeout(() => setPhotoUploadSuccess(''), 3000);
   };
 
   const toggleFacility = (facility: string) => {
@@ -786,45 +918,244 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
               </button>
             </div>
 
-            <p className="text-xs text-slate-500">
-              Upload exactly 4 clear photos (1. Bedroom, 2. Living/Common, 3. Washroom/Kitchen, 4. Building Exterior/Balcony).
-            </p>
+            {/* Clear Photo Upload Guidelines Box */}
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 sm:p-4 text-xs space-y-1.5">
+              <div className="flex items-center gap-2 font-black text-slate-800">
+                <Info className="w-4 h-4 text-[#FF5A5F] shrink-0" />
+                <span>Photo Upload Guidelines & Format Specifications</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-600 pl-6">
+                <div>
+                  <span className="font-bold text-slate-700">Supported Formats:</span> JPG, JPEG, PNG, WEBP
+                </div>
+                <div>
+                  <span className="font-bold text-slate-700">Maximum File Size:</span> Up to 5 MB per photo
+                </div>
+                <div className="sm:col-span-2 text-slate-500">
+                  ⚡ <strong>Camera & Gallery:</strong> Tap <strong>Camera</strong> to snap a live photo, or <strong>Gallery</strong> to choose existing files from phone storage.
+                </div>
+              </div>
+            </div>
 
+            {/* Error Notification Banner */}
+            {photoUploadError && (
+              <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-start justify-between gap-2 animate-in fade-in">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                  <span>{photoUploadError}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPhotoUploadError('')}
+                  className="text-rose-500 hover:text-rose-700 p-0.5 rounded-md"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
+            {/* Success Notification Banner */}
+            {photoUploadSuccess && (
+              <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center justify-between gap-2 animate-in fade-in">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>{photoUploadSuccess}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPhotoUploadSuccess('')}
+                  className="text-emerald-600 hover:text-emerald-800 p-0.5"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
+            {/* 4 Photos Grid with Camera & Gallery Dual Options */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {['Bedroom & Bed', 'Living / Study Area', 'Washroom / Kitchen', 'Exterior / Balcony'].map(
-                (label, index) => (
-                  <div
-                    key={index}
-                    className="border-2 border-dashed border-slate-300 hover:border-[#FF5A5F] rounded-2xl p-3 bg-[#F7F9FB] text-center transition flex flex-col justify-between"
-                  >
-                    <span className="text-xs font-bold text-[#222222] block mb-2">
-                      Photo {index + 1}: {label}
-                    </span>
+                (label, index) => {
+                  const meta = photoMeta[index];
+                  return (
+                    <div
+                      key={index}
+                      className="border-2 border-dashed border-slate-300 hover:border-[#FF5A5F] rounded-2xl p-3 bg-[#F7F9FB] text-center transition flex flex-col justify-between group"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-[#222222]">
+                          Photo {index + 1}: {label}
+                        </span>
+                      </div>
 
-                    <div className="relative h-32 w-full rounded-xl overflow-hidden mb-2 bg-slate-200">
-                      <img
-                        src={photos[index]}
-                        alt={`Photo ${index + 1}`}
-                        className="w-full h-full object-cover"
-                        referrerPolicy="no-referrer"
-                      />
+                      {/* Photo Preview */}
+                      <div
+                        onClick={() => setActivePickerIndex(index)}
+                        className="relative h-32 w-full rounded-xl overflow-hidden mb-2 bg-slate-200 cursor-pointer shadow-xs"
+                        title="Click to view camera & gallery options"
+                      >
+                        <img
+                          src={photos[index]}
+                          alt={`Photo ${index + 1}`}
+                          className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-[11px] font-bold">
+                          Tap to Change
+                        </div>
+                        {meta && (
+                          <div className="absolute bottom-1 right-1 bg-emerald-600/90 text-white text-[9px] font-black px-1.5 py-0.5 rounded-md shadow-xs">
+                            {meta.size} ✓
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Dual Action Buttons: Camera + Gallery */}
+                      <div className="space-y-1.5">
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {/* Option A: Take Photo via Camera */}
+                          <label className={`py-2 px-1.5 bg-white hover:bg-slate-100 text-slate-800 text-[11px] font-extrabold rounded-lg border border-slate-200 cursor-pointer flex items-center justify-center gap-1 transition shadow-2xs hover:border-[#FF5A5F] ${isProcessingPhoto ? 'opacity-60 pointer-events-none' : ''}`}>
+                            <Camera className="w-3.5 h-3.5 text-[#FF5A5F] shrink-0" />
+                            <span>Camera</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              capture="environment"
+                              onChange={(e) => handlePhotoUpload(e, index)}
+                              className="hidden"
+                            />
+                          </label>
+
+                          {/* Option B: Choose from Gallery / Files */}
+                          <label className={`py-2 px-1.5 bg-white hover:bg-slate-100 text-slate-800 text-[11px] font-extrabold rounded-lg border border-slate-200 cursor-pointer flex items-center justify-center gap-1 transition shadow-2xs hover:border-[#00A699] ${isProcessingPhoto ? 'opacity-60 pointer-events-none' : ''}`}>
+                            <ImageIcon className="w-3.5 h-3.5 text-[#00A699] shrink-0" />
+                            <span>Gallery</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handlePhotoUpload(e, index)}
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
+
+                        {/* More Picker Options modal trigger */}
+                        <button
+                          type="button"
+                          onClick={() => setActivePickerIndex(index)}
+                          className="w-full text-[10px] text-slate-500 hover:text-slate-800 font-bold py-1 underline transition"
+                        >
+                          Media Picker Dialog & Specs
+                        </button>
+                      </div>
                     </div>
-
-                    <label className="w-full py-1.5 px-2 bg-white hover:bg-slate-100 text-[#222222] text-[11px] font-bold rounded-lg border border-slate-200 cursor-pointer flex items-center justify-center gap-1.5 transition">
-                      <Upload className="w-3.5 h-3.5 text-[#FF5A5F]" />
-                      <span>Upload Image</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handlePhotoUpload(e, index)}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-                )
+                  );
+                }
               )}
             </div>
           </div>
+
+          {/* Media Picker Dialog Modal */}
+          {activePickerIndex !== null && (
+            <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-100 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div>
+                    <h4 className="font-black text-slate-900 text-base">
+                      Select Photo {activePickerIndex + 1}
+                    </h4>
+                    <p className="text-xs text-slate-500">
+                      {['Bedroom & Bed', 'Living / Study Area', 'Washroom / Kitchen', 'Exterior / Balcony'][activePickerIndex]}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActivePickerIndex(null)}
+                    className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Specs Box in Modal */}
+                <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-xs text-emerald-900 space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold">
+                    <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Auto-Optimized Upload:</span>
+                  </div>
+                  <p className="text-[11px] text-emerald-800">
+                    • Direct live Camera snapshot or phone Gallery selection supported.
+                    <br />• High-resolution camera photos (up to 25MB) are automatically resized & compressed.
+                  </p>
+                </div>
+
+                {/* Current Preview */}
+                <div className="relative h-36 w-full rounded-2xl overflow-hidden border border-slate-200 bg-slate-100">
+                  <img
+                    src={photos[activePickerIndex]}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                  {isProcessingPhoto && (
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex flex-col items-center justify-center text-white gap-2">
+                      <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span className="text-xs font-bold">Optimizing camera photo...</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Big Touch-friendly Choices */}
+                <div className="space-y-2">
+                  {/* Camera Option */}
+                  <label className={`w-full py-3.5 px-4 bg-[#FF5A5F] hover:bg-[#E0484D] text-white rounded-2xl font-black text-xs shadow-md shadow-[#FF5A5F]/20 flex items-center justify-center gap-2 cursor-pointer transition active:scale-98 ${isProcessingPhoto ? 'opacity-60 pointer-events-none' : ''}`}>
+                    <Camera className="w-4 h-4" />
+                    <span>Take Photo with Camera</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={(e) => handlePhotoUpload(e, activePickerIndex)}
+                      className="hidden"
+                    />
+                  </label>
+
+                  {/* Gallery Option */}
+                  <label className={`w-full py-3.5 px-4 bg-[#00A699] hover:bg-[#00847A] text-white rounded-2xl font-black text-xs shadow-md shadow-[#00A699]/20 flex items-center justify-center gap-2 cursor-pointer transition active:scale-98 ${isProcessingPhoto ? 'opacity-60 pointer-events-none' : ''}`}>
+                    <ImageIcon className="w-4 h-4" />
+                    <span>Choose from Device Gallery</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handlePhotoUpload(e, activePickerIndex)}
+                      className="hidden"
+                    />
+                  </label>
+
+                  {/* Reset to preset sample */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPhotos((prev) => {
+                        const next = [...prev] as [string, string, string, string];
+                        next[activePickerIndex] = SAMPLE_PHOTO_PRESETS[activePickerIndex].url;
+                        return next;
+                      });
+                      setPhotoMeta((prev) => {
+                        const next = { ...prev };
+                        delete next[activePickerIndex];
+                        return next;
+                      });
+                      setActivePickerIndex(null);
+                    }}
+                    className="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Restore Default Preset Photo</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Section 5: Facilities */}
           <div className="space-y-4">

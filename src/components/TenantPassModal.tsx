@@ -419,7 +419,7 @@ export const TenantPassModal: React.FC<TenantPassModalProps> = ({
                           type="text"
                           value={preferredCity}
                           onChange={(e) => setPreferredCity(e.target.value)}
-                          placeholder="e.g. Guwahati, Jorhat"
+                          placeholder="e.g. Guwahati, Bangalore, Delhi, Pune"
                           className="w-full px-3.5 py-2.5 text-sm bg-[#F7F9FB] border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#FF5A5F] focus:outline-none text-[#222222] font-semibold"
                         />
                       </div>

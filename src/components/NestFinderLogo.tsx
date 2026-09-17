@@ -1,5 +1,5 @@
 import React from 'react';
-import logoIcon from '../assets/images/nestfinder_user_logo_1788320914065.jpg';
+import logoIcon from '../assets/images/nestfinder_official_logo.jpg';
 
 interface NestFinderLogoProps {
   className?: string;
@@ -48,20 +48,20 @@ export const NestFinderLogo: React.FC<NestFinderLogoProps> = ({
   if (variant === 'full') {
     return (
       <div className={`flex flex-col items-center justify-center text-center ${className}`}>
-        <div className="filter drop-shadow-[0_4px_14px_rgba(0,168,89,0.12)] transition-transform duration-300 hover:scale-105">
+        <div className="p-1 rounded-3xl bg-slate-950/40 backdrop-blur-sm border border-amber-400/20 shadow-2xl shadow-slate-950/60 transition-transform duration-300 hover:scale-105">
           <img
             src={logoUrl}
             alt="NestFinder Logo with Text"
             referrerPolicy="no-referrer"
-            className="w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64 object-contain rounded-2xl"
+            className="w-44 h-44 sm:w-52 sm:h-52 md:w-56 md:h-56 object-contain rounded-2xl"
           />
         </div>
-        <div className="mt-2 flex items-center gap-2">
-          <span className="h-[2px] w-6 bg-gradient-to-r from-transparent to-[#00A859]" />
-          <span className="text-xs sm:text-sm font-bold text-slate-800 uppercase tracking-wider">
+        <div className="mt-2.5 flex items-center gap-2">
+          <span className="h-[2px] w-6 bg-gradient-to-r from-transparent to-[#FFD700]" />
+          <span className="text-xs sm:text-sm font-bold text-amber-300/90 uppercase tracking-wider drop-shadow-sm">
             Zero Brokerage PG & Rental Platform
           </span>
-          <span className="h-[2px] w-6 bg-gradient-to-l from-transparent to-[#EAB308]" />
+          <span className="h-[2px] w-6 bg-gradient-to-l from-transparent to-[#FFD700]" />
         </div>
       </div>
     );

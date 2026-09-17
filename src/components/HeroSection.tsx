@@ -28,17 +28,18 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 }) => {
   return (
     <section className="relative text-slate-900 py-6 sm:py-10 px-4 overflow-hidden border-b border-slate-300 shadow-sm">
-      {/* Exact User Uploaded Living Room Background - 100% Bright, Crisp & Natural */}
+      {/* Exact User Uploaded Living Room Background */}
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(${heroBg})` }}
       />
-      {/* Ultra-subtle soft gradient to preserve 100% room clarity while ensuring pristine readability */}
-      <div className="absolute inset-0 bg-gradient-to-b from-white/40 via-white/20 to-slate-900/40 pointer-events-none" />
+      {/* Lighter, brighter veil: allows the bright ambient room lighting to shine while keeping text & logo crystal clear */}
+      <div className="absolute inset-0 bg-slate-950/25 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-b from-slate-950/35 via-black/10 to-slate-950/40 pointer-events-none" />
 
       <div className="max-w-5xl mx-auto text-center relative z-10">
         
-        {/* 100% Completely Transparent NestFinder Official Brand Logo (Enlarged & Clear) */}
+        {/* NestFinder Official Brand Logo */}
         <div className="flex flex-col items-center justify-center mb-4">
           <div className="transition-transform duration-300 hover:scale-105">
             <NestFinderLogo size="xl" variant="full" />
@@ -51,14 +52,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           Zero Brokerage • 100% Direct Owner Phone & WhatsApp Access
         </div>
 
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight mb-2 text-slate-950 leading-snug drop-shadow-[0_1px_3px_rgba(255,255,255,0.9)]">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight mb-2 text-white leading-snug drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
           Find Your Ideal{' '}
-          <span className="text-[#00A859] drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)]">
+          <span className="text-[#FFE57F] drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
             PG, Hostel or Rental Flat
           </span>
         </h1>
 
-        <p className="text-slate-800 text-xs sm:text-sm max-w-xl mx-auto mb-4 font-semibold drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)]">
+        <p className="text-white text-xs sm:text-sm max-w-xl mx-auto mb-4 font-bold drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)]">
           Explore verified student hostels, single/double sharing PGs, and family apartments.
           Instant direct owner contacts and exact addresses unlocked with the ₹49 Tenant Pass.
         </p>
