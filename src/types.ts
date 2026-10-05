@@ -43,6 +43,8 @@ export interface TenantUser {
   tenantType?: 'Student' | 'Working Professional' | 'Family';
   hasPaidPass: boolean;
   passUtr?: string;
+  razorpayPaymentId?: string;
+  paymentMethod?: 'Razorpay' | 'UPI_QR';
   passPurchasedAt?: string;
   password?: string;
 }
@@ -67,6 +69,12 @@ export interface SupabaseConfig {
   lastSynced?: string;
 }
 
+export interface RazorpayConfig {
+  keyId: string;
+  isTestMode: boolean;
+  businessName: string;
+}
+
 export interface PaymentRecord {
   id: string;
   userType: 'tenant' | 'owner';
@@ -74,6 +82,8 @@ export interface PaymentRecord {
   phone: string;
   amount: number;
   utr: string;
+  razorpayPaymentId?: string;
+  paymentMethod?: 'Razorpay' | 'UPI_QR';
   referenceId: string;
   propertyId?: string;
   timestamp: string;

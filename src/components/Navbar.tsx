@@ -11,6 +11,7 @@ interface NavbarProps {
   onOpenSupabaseModal: () => void;
   onOpenExportModal: () => void;
   onOpenReviewModal: () => void;
+  onOpenRazorpayConfig?: () => void;
   reviewCount?: number;
 }
 
@@ -22,6 +23,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenSupabaseModal,
   onOpenExportModal,
   onOpenReviewModal,
+  onOpenRazorpayConfig,
   reviewCount = 5
 }) => {
   const isPassActive = tenantPass?.hasPaidPass;
@@ -70,6 +72,21 @@ export const Navbar: React.FC<NavbarProps> = ({
               4.9★
             </span>
           </button>
+
+          {/* Razorpay Gateway Button */}
+          {onOpenRazorpayConfig && (
+            <button
+              onClick={onOpenRazorpayConfig}
+              className="px-2 sm:px-2.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1 sm:gap-1.5 bg-[#0C2340]/5 hover:bg-[#0C2340]/10 text-[#0C2340] border border-blue-200 shadow-2xs shrink-0"
+              title="Razorpay Payment Gateway Status & Config"
+            >
+              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-[#2B83EA] shrink-0">
+                <path d="M14 2L2 14h8l-2 8 12-12h-8l2-8z" />
+              </svg>
+              <span className="hidden md:inline font-black text-[#0C2340]">Razorpay</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+            </button>
+          )}
 
           <button
             onClick={() => setActiveTab('owner')}

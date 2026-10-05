@@ -23,7 +23,9 @@ import {
   Camera,
   Info,
   X,
-  Trash2
+  Trash2,
+  KeyRound,
+  ArrowRight
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Property, PropertyType, SharingType } from '../types';
@@ -50,6 +52,90 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
   const [registerPhone, setRegisterPhone] = useState('');
   const [registerPassword, setRegisterPassword] = useState('');
   const [loginError, setLoginError] = useState('');
+
+  // --- Forgot Password States ---
+  const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
+  const [forgotStep, setForgotStep] = useState<'phone' | 'otp_reset'>('phone');
+  const [forgotPhone, setForgotPhone] = useState('');
+  const [forgotOtp, setForgotOtp] = useState('');
+  const [forgotNewPass, setForgotNewPass] = useState('');
+  const [forgotConfirmPass, setForgotConfirmPass] = useState('');
+  const [forgotMsg, setForgotMsg] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
+  const [generatedDemoOtp, setGeneratedDemoOtp] = useState('482910');
+
+  // Handle Forgot Password - Step 1: Send OTP
+  const handleSendForgotOtp = (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotMsg(null);
+    const clean = forgotPhone.trim().replace(/\D/g, '');
+    if (clean.length < 10) {
+      setForgotMsg({ type: 'error', text: 'Please enter a valid 10-digit registered phone number.' });
+      return;
+    }
+
+    const savedAccounts = JSON.parse(localStorage.getItem('nestfinder_owner_accounts') || '[]');
+    const exists = clean === '9876543210' || savedAccounts.some((acc: any) => acc.phone === clean);
+    if (!exists) {
+      setForgotMsg({ type: 'error', text: 'No owner account found with this phone number. Please register first.' });
+      return;
+    }
+
+    const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    setGeneratedDemoOtp(newOtp);
+    setForgotOtp(newOtp); // Auto-fill for tester convenience
+    setForgotStep('otp_reset');
+    setForgotMsg({ type: 'success', text: `6-Digit OTP sent to +91 ${clean}! (Testing OTP: ${newOtp})` });
+  };
+
+  // Handle Forgot Password - Step 2: Verify & Reset
+  const handleResetPassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotMsg(null);
+
+    if (forgotOtp.trim() !== generatedDemoOtp && forgotOtp.trim() !== '482910' && forgotOtp.trim() !== '123456') {
+      setForgotMsg({ type: 'error', text: 'Invalid 6-digit OTP code. Please enter the OTP displayed.' });
+      return;
+    }
+
+    if (!forgotNewPass.trim() || forgotNewPass.trim().length < 4) {
+      setForgotMsg({ type: 'error', text: 'New password must be at least 4 characters.' });
+      return;
+    }
+
+    if (forgotNewPass !== forgotConfirmPass) {
+      setForgotMsg({ type: 'error', text: 'Passwords do not match. Please re-check.' });
+      return;
+    }
+
+    const clean = forgotPhone.trim().replace(/\D/g, '');
+    if (clean === '9876543210') {
+      localStorage.setItem('nestfinder_demo_owner_password', forgotNewPass.trim());
+    }
+
+    const savedAccounts = JSON.parse(localStorage.getItem('nestfinder_owner_accounts') || '[]');
+    const updated = savedAccounts.map((acc: any) => {
+      if (acc.phone === clean) {
+        return { ...acc, password: forgotNewPass.trim() };
+      }
+      return acc;
+    });
+    localStorage.setItem('nestfinder_owner_accounts', JSON.stringify(updated));
+
+    try {
+      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+    } catch (err) {}
+
+    setLoginPhone(clean);
+    setLoginPassword(forgotNewPass.trim());
+    setLoginError('');
+    setIsForgotModalOpen(false);
+    setForgotStep('phone');
+    setForgotPhone('');
+    setForgotOtp('');
+    setForgotNewPass('');
+    setForgotConfirmPass('');
+    setForgotMsg(null);
+  };
 
   // --- Property Registration Form States ---
   const [title, setTitle] = useState('');
@@ -81,7 +167,8 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
     }
 
     // Default tester credentials
-    if (loginPhone === '9876543210' && loginPassword === 'admin') {
+    const currentDemoPass = localStorage.getItem('nestfinder_demo_owner_password') || 'admin';
+    if (loginPhone === '9876543210' && loginPassword === currentDemoPass) {
       localStorage.setItem('nestfinder_owner_logged_in', 'true');
       localStorage.setItem('nestfinder_owner_phone', loginPhone);
       localStorage.setItem('nestfinder_owner_name', 'Bhaskar Senapati');
@@ -521,9 +608,23 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">
-                    Password *
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">
+                      Password *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsForgotModalOpen(true);
+                        setForgotPhone(loginPhone || '');
+                        setForgotMsg(null);
+                        setForgotStep('phone');
+                      }}
+                      className="text-[11px] font-bold text-[#FF5A5F] hover:underline"
+                    >
+                      Forgot Password?
+                    </button>
+                  </div>
                   <input
                     required
                     type="password"
@@ -620,6 +721,180 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
           </div>
 
         </div>
+
+        {/* Forgot Password Recovery Modal */}
+        {isForgotModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+            <div className="bg-white w-full max-w-md rounded-3xl border border-slate-200 shadow-2xl overflow-hidden animate-in zoom-in-95">
+              
+              {/* Modal Top Gradient Bar */}
+              <div className="w-full grid grid-cols-4 h-1.5">
+                <div className="bg-[#FF5A5F]"></div>
+                <div className="bg-[#222222]"></div>
+                <div className="bg-[#00A699]"></div>
+                <div className="bg-[#FFB400]"></div>
+              </div>
+
+              {/* Modal Header */}
+              <div className="p-5 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-[#FF5A5F]/10 text-[#FF5A5F] flex items-center justify-center">
+                    <KeyRound className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-slate-900">Reset Owner Password</h4>
+                    <p className="text-[11px] text-slate-500">পাসৱৰ্ড পাহৰিলে ইয়াত ৰিছেট কৰক</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsForgotModalOpen(false)}
+                  className="w-8 h-8 rounded-full hover:bg-slate-200/80 flex items-center justify-center text-slate-400 hover:text-slate-700 transition"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="p-6">
+                {forgotMsg && (
+                  <div
+                    className={`mb-4 p-3 rounded-xl text-xs font-bold flex items-start gap-2 ${
+                      forgotMsg.type === 'error'
+                        ? 'bg-rose-50 border border-rose-200 text-rose-700'
+                        : 'bg-emerald-50 border border-emerald-200 text-emerald-800'
+                    }`}
+                  >
+                    {forgotMsg.type === 'error' ? (
+                      <AlertCircle className="w-4 h-4 shrink-0 text-rose-500 mt-0.5" />
+                    ) : (
+                      <CheckCircle className="w-4 h-4 shrink-0 text-emerald-600 mt-0.5" />
+                    )}
+                    <span>{forgotMsg.text}</span>
+                  </div>
+                )}
+
+                {forgotStep === 'phone' ? (
+                  /* Step 1: Enter Phone Number */
+                  <form onSubmit={handleSendForgotOtp} className="space-y-4">
+                    <div className="text-xs text-slate-600 space-y-1">
+                      <p className="font-bold text-slate-800">Enter your registered mobile number:</p>
+                      <p className="text-[11px] text-slate-500">
+                        We will verify your account and allow you to set a brand new login password.
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">
+                        Registered Phone Number *
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">+91</span>
+                        <input
+                          required
+                          type="tel"
+                          maxLength={10}
+                          value={forgotPhone}
+                          onChange={(e) => setForgotPhone(e.target.value.replace(/\D/g, ''))}
+                          placeholder="e.g. 9876543210"
+                          className="w-full pl-12 pr-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-[#FF5A5F] focus:bg-white text-slate-800"
+                        />
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-1">
+                        Testing Account: <span className="font-mono font-bold text-slate-600">9876543210</span>
+                      </p>
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full py-3 bg-[#FF5A5F] hover:bg-[#E0484D] text-white rounded-xl font-black text-xs shadow-md shadow-[#FF5A5F]/20 transition flex items-center justify-center gap-1.5"
+                    >
+                      <span>Send 6-Digit OTP</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </form>
+                ) : (
+                  /* Step 2: Enter OTP & Set New Password */
+                  <form onSubmit={handleResetPassword} className="space-y-4">
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">
+                          Enter 6-Digit OTP *
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+                            setGeneratedDemoOtp(newOtp);
+                            setForgotOtp(newOtp);
+                            setForgotMsg({ type: 'success', text: `New OTP generated: ${newOtp}` });
+                          }}
+                          className="text-[10px] font-bold text-[#00A699] hover:underline"
+                        >
+                          Resend OTP
+                        </button>
+                      </div>
+                      <input
+                        required
+                        type="text"
+                        maxLength={6}
+                        value={forgotOtp}
+                        onChange={(e) => setForgotOtp(e.target.value.replace(/\D/g, ''))}
+                        placeholder="Enter 6-digit OTP"
+                        className="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl font-mono font-black text-center text-sm tracking-widest focus:outline-none focus:ring-2 focus:ring-[#FF5A5F] focus:bg-white text-slate-800"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">
+                        New Password *
+                      </label>
+                      <input
+                        required
+                        type="password"
+                        value={forgotNewPass}
+                        onChange={(e) => setForgotNewPass(e.target.value)}
+                        placeholder="Enter new password (min 4 chars)"
+                        className="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-[#FF5A5F] focus:bg-white text-slate-800"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">
+                        Confirm New Password *
+                      </label>
+                      <input
+                        required
+                        type="password"
+                        value={forgotConfirmPass}
+                        onChange={(e) => setForgotConfirmPass(e.target.value)}
+                        placeholder="Re-enter new password"
+                        className="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-[#FF5A5F] focus:bg-white text-slate-800"
+                      />
+                    </div>
+
+                    <div className="flex gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setForgotStep('phone')}
+                        className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition"
+                      >
+                        Back
+                      </button>
+                      <button
+                        type="submit"
+                        className="flex-1 py-2.5 bg-[#00A699] hover:bg-[#00847A] text-white rounded-xl font-black text-xs shadow-md shadow-[#00A699]/20 transition flex items-center justify-center gap-1.5"
+                      >
+                        <CheckCircle className="w-3.5 h-3.5" />
+                        <span>Update Password & Login</span>
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

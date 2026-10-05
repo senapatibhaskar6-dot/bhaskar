@@ -10,6 +10,7 @@ import { SupabaseModal } from './components/SupabaseModal';
 import { ExportHtmlModal } from './components/ExportHtmlModal';
 import { AppReviewModal } from './components/AppReviewModal';
 import { AppReviewsSection } from './components/AppReviewsSection';
+import { RazorpayConfigModal } from './components/RazorpayConfigModal';
 import { NestFinderLogo } from './components/NestFinderLogo';
 import { SplashScreen } from './components/SplashScreen';
 import footerBg from './assets/images/footer_architecture_bg_1788145106193.jpg';
@@ -126,6 +127,7 @@ export default function App() {
   const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [isRazorpayConfigOpen, setIsRazorpayConfigOpen] = useState(false);
   const [galleryProperty, setGalleryProperty] = useState<Property | null>(null);
   const [appointmentProperty, setAppointmentProperty] = useState<Property | null>(null);
 
@@ -305,6 +307,7 @@ export default function App() {
         onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
         onOpenExportModal={() => setIsExportModalOpen(true)}
         onOpenReviewModal={() => setIsReviewModalOpen(true)}
+        onOpenRazorpayConfig={() => setIsRazorpayConfigOpen(true)}
         reviewCount={reviews.length}
       />
 
@@ -552,15 +555,33 @@ export default function App() {
             <p className="text-xs text-slate-100 leading-relaxed mb-3 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
               Owners list for 100% free. Tenants undergo registered pass verification to prevent fake inquiries and spam, keeping the community safe.
             </p>
-            <div className="flex items-center gap-1.5 text-xs text-emerald-300 font-bold bg-white/15 px-3 py-1.5 rounded-lg border border-white/25 w-fit backdrop-blur-sm shadow-md">
-              <ShieldCheck className="w-4 h-4 text-[#00E676]" />
-              <span>100% Secure Verified Platform</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1.5 text-xs text-emerald-300 font-bold bg-white/15 px-3 py-1.5 rounded-lg border border-white/25 w-fit backdrop-blur-sm shadow-md">
+                <ShieldCheck className="w-4 h-4 text-[#00E676]" />
+                <span>100% Secure Verified Platform</span>
+              </div>
+              <button
+                onClick={() => setIsRazorpayConfigOpen(true)}
+                className="flex items-center gap-1.5 text-xs text-blue-200 hover:text-white font-bold bg-[#0C2340]/60 hover:bg-[#0C2340]/80 px-3 py-1.5 rounded-lg border border-blue-400/30 w-fit backdrop-blur-sm shadow-md transition cursor-pointer"
+                title="View Razorpay Gateway Status & Key Settings"
+              >
+                <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-[#2B83EA]">
+                  <path d="M14 2L2 14h8l-2 8 12-12h-8l2-8z" />
+                </svg>
+                <span>Razorpay Gateway (Active)</span>
+              </button>
             </div>
           </div>
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 pt-4 border-t border-white/20 text-xs text-center text-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
           <span className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">&copy; 2026 NestFinder • Direct Housing Platform. All Rights Reserved.</span>
+          <button
+            onClick={() => setIsRazorpayConfigOpen(true)}
+            className="text-[11px] text-blue-200 hover:text-white underline font-semibold transition"
+          >
+            Razorpay Merchant Settings
+          </button>
         </div>
       </footer>
 
@@ -570,6 +591,12 @@ export default function App() {
         onClose={() => setIsPassModalOpen(false)}
         tenantPass={tenantPass}
         onPassPurchased={handlePassPurchased}
+      />
+
+      <RazorpayConfigModal
+        isOpen={isRazorpayConfigOpen}
+        onClose={() => setIsRazorpayConfigOpen(false)}
+        onTestPayment={() => setIsPassModalOpen(true)}
       />
 
       <AppointmentModal
