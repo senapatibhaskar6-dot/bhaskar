@@ -85,6 +85,7 @@ export async function syncPropertyToSupabase(property: Property, config: Supabas
       facilities: property.facilities,
       description: property.description,
       is_verified: property.isVerified,
+      is_booked: Boolean(property.isBooked),
       listing_utr: property.listingUtr || null,
       gender_restriction: property.genderRestriction || null,
       created_at: property.createdAt
@@ -209,6 +210,7 @@ export async function fetchRemoteProperties(config: SupabaseConfig): Promise<Pro
       facilities: row.facilities || [],
       description: row.description || '',
       isVerified: Boolean(row.is_verified),
+      isBooked: Boolean(row.is_booked),
       listingUtr: row.listing_utr,
       genderRestriction: row.gender_restriction,
       createdAt: row.created_at
@@ -238,6 +240,7 @@ export async function syncJobToSupabase(job: JobVacancy, config: SupabaseConfig)
       description: job.description,
       job_type: job.jobType || 'Full-time',
       employer_name: job.employerName || null,
+      is_booked: Boolean(job.isBooked),
       posted_at: job.postedAt
     });
 
@@ -272,6 +275,7 @@ export async function fetchRemoteJobs(config: SupabaseConfig): Promise<JobVacanc
       description: row.description,
       jobType: row.job_type,
       employerName: row.employer_name,
+      isBooked: Boolean(row.is_booked),
       postedAt: row.posted_at
     }));
   } catch (err) {
@@ -392,6 +396,7 @@ CREATE TABLE IF NOT EXISTS public.properties (
     facilities JSONB DEFAULT '[]'::jsonb,
     description TEXT,
     is_verified BOOLEAN DEFAULT true,
+    is_booked BOOLEAN DEFAULT false,
     listing_utr TEXT,
     gender_restriction TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
@@ -450,6 +455,7 @@ CREATE TABLE IF NOT EXISTS public.jobs (
     description TEXT NOT NULL,
     job_type TEXT DEFAULT 'Full-time',
     employer_name TEXT,
+    is_booked BOOLEAN DEFAULT false,
     posted_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 

@@ -16,7 +16,9 @@ import {
   DollarSign,
   Share2,
   ChevronRight,
-  UserCheck
+  UserCheck,
+  SlidersHorizontal,
+  X
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { JobVacancy, SupabaseConfig } from '../types';
@@ -25,12 +27,14 @@ import { syncJobToSupabase } from '../services/supabase';
 interface JobsPortalProps {
   jobs: JobVacancy[];
   onAddJob: (newJob: JobVacancy) => void;
+  onToggleJobStatus?: (jobId: string, isBooked: boolean) => void;
   supabaseConfig: SupabaseConfig;
 }
 
 export const JobsPortal: React.FC<JobsPortalProps> = ({
   jobs,
   onAddJob,
+  onToggleJobStatus,
   supabaseConfig
 }) => {
   const [activeTab, setActiveTab] = useState<'seeker' | 'employer'>('seeker');
@@ -40,6 +44,35 @@ export const JobsPortal: React.FC<JobsPortalProps> = ({
   const [searchLocation, setSearchLocation] = useState('');
   const [searchCompany, setSearchCompany] = useState('');
   const [selectedType, setSelectedType] = useState<string>('ALL');
+
+  // Status Filter State (ALL / AVAILABLE / BOOKED)
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'AVAILABLE' | 'BOOKED'>('ALL');
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [initialIsBooked, setInitialIsBooked] = useState(false);
+
+  // Status Toggle Handler with Instant Toast Feedback
+  const handleToggleJobStatusWithToast = (job: JobVacancy) => {
+    const nextStatus = !job.isBooked;
+    if (onToggleJobStatus) {
+      onToggleJobStatus(job.id, nextStatus);
+    } else {
+      job.isBooked = nextStatus;
+    }
+
+    if (nextStatus) {
+      setToastMessage(`🔴 "${job.title}" marked as Booked / Filled! Calls & WhatsApp are paused so the employer is not called repeatedly.`);
+    } else {
+      setToastMessage(`🟢 "${job.title}" marked as Available! Candidates can now view and call directly.`);
+    }
+
+    try {
+      confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+    } catch (e) {}
+
+    setTimeout(() => {
+      setToastMessage((curr) => (curr && curr.includes(job.title) ? null : curr));
+    }, 4500);
+  };
 
   // Employer Form States
   const [title, setTitle] = useState('');
@@ -58,6 +91,10 @@ export const JobsPortal: React.FC<JobsPortalProps> = ({
 
   // Filtering
   const filteredJobs = jobs.filter((job) => {
+    // Status Filter (🟢 Available Only / 🔴 Booked)
+    if (statusFilter === 'AVAILABLE' && job.isBooked) return false;
+    if (statusFilter === 'BOOKED' && !job.isBooked) return false;
+
     const matchesTitle =
       !searchTitle.trim() ||
       job.title.toLowerCase().includes(searchTitle.toLowerCase()) ||
@@ -75,6 +112,9 @@ export const JobsPortal: React.FC<JobsPortalProps> = ({
 
     return matchesTitle && matchesLocation && matchesCompany && matchesType;
   });
+
+  const availableJobsCount = jobs.filter((j) => !j.isBooked).length;
+  const bookedJobsCount = jobs.filter((j) => j.isBooked).length;
 
   const handlePostJob = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,6 +145,7 @@ export const JobsPortal: React.FC<JobsPortalProps> = ({
       description: description.trim(),
       jobType,
       employerName: employerName.trim() || company.trim(),
+      isBooked: initialIsBooked,
       postedAt: new Date().toISOString()
     };
 
@@ -190,9 +231,79 @@ export const JobsPortal: React.FC<JobsPortalProps> = ({
         </div>
       </div>
 
+      {/* Toast Notification Banner */}
+      {toastMessage && (
+        <div className="mb-6 p-4 rounded-2xl bg-slate-900 text-white border border-slate-700 flex items-center justify-between gap-3 shadow-lg animate-in slide-in-from-top duration-300">
+          <div className="flex items-center gap-2.5 text-xs sm:text-sm font-bold">
+            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+            <span>{toastMessage}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setToastMessage(null)}
+            className="text-slate-400 hover:text-white text-xs px-2 py-1"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {activeTab === 'seeker' ? (
         /* ================== JOB SEEKER VIEW ================== */
         <div className="space-y-6">
+
+          {/* Top 3 Summary Metric Cards (Interactive click to filter) */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <button
+              type="button"
+              onClick={() => setStatusFilter('ALL')}
+              className={`text-left bg-white border rounded-2xl p-4 shadow-xs transition hover:border-slate-400 ${
+                statusFilter === 'ALL' ? 'ring-2 ring-slate-900 border-slate-900' : 'border-slate-200/80'
+              }`}
+            >
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                Total Job Vacancies
+              </span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-black text-slate-900">{jobs.length}</span>
+                <span className="text-xs font-semibold text-slate-500">Verified Openings</span>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setStatusFilter('AVAILABLE')}
+              className={`text-left bg-emerald-50 border rounded-2xl p-4 shadow-xs transition hover:border-emerald-400 ${
+                statusFilter === 'AVAILABLE' ? 'ring-2 ring-emerald-600 border-emerald-600 shadow-sm' : 'border-emerald-200'
+              }`}
+            >
+              <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider block mb-1 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                <span>🟢 Available Only</span>
+              </span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-black text-emerald-800">{availableJobsCount}</span>
+                <span className="text-xs font-semibold text-emerald-700">Open for Direct Calls</span>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setStatusFilter('BOOKED')}
+              className={`text-left bg-rose-50 border rounded-2xl p-4 shadow-xs transition hover:border-rose-400 ${
+                statusFilter === 'BOOKED' ? 'ring-2 ring-rose-600 border-rose-600 shadow-sm' : 'border-rose-200'
+              }`}
+            >
+              <span className="text-[11px] font-bold text-rose-800 uppercase tracking-wider block mb-1 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                <span>🔴 Booked / Filled</span>
+              </span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-black text-rose-800">{bookedJobsCount}</span>
+                <span className="text-xs font-semibold text-rose-700">Positions Closed (Calls Paused)</span>
+              </div>
+            </button>
+          </div>
           
           {/* Search & Filtering Bar */}
           <div className="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-xs space-y-4">
@@ -235,8 +346,58 @@ export const JobsPortal: React.FC<JobsPortalProps> = ({
               </div>
             </div>
 
-            {/* Quick Type Tags */}
+            {/* Quick Status & Type Tags */}
             <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100">
+              
+              {/* Status Filter Buttons: 🟢 Available Only & 🔴 Booked Combined (EKETA LOGAI) */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-bold text-slate-500 mr-1 flex items-center gap-1">
+                  <SlidersHorizontal className="w-3.5 h-3.5 text-[#FF5A5F]" /> Status:
+                </span>
+
+                {/* Joined Segmented Pill Group */}
+                <div className="inline-flex p-1 rounded-2xl bg-slate-100 border border-slate-300/80 shadow-inner">
+                  <button
+                    type="button"
+                    onClick={() => setStatusFilter('AVAILABLE')}
+                    className={`px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 ${
+                      statusFilter === 'AVAILABLE'
+                        ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-500/30'
+                        : 'text-emerald-800 hover:bg-emerald-100/70'
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>🟢 Available Only ({availableJobsCount})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setStatusFilter('BOOKED')}
+                    className={`px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 ${
+                      statusFilter === 'BOOKED'
+                        ? 'bg-rose-600 text-white shadow-sm ring-2 ring-rose-500/30'
+                        : 'text-rose-800 hover:bg-rose-100/70'
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-rose-400"></span>
+                    <span>🔴 Booked ({bookedJobsCount})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setStatusFilter('ALL')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                      statusFilter === 'ALL'
+                        ? 'bg-slate-900 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    All ({jobs.length})
+                  </button>
+                </div>
+              </div>
+
+              {/* Type Filter Tags */}
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="text-xs font-bold text-slate-400 mr-1 flex items-center gap-1">
                   <Filter className="w-3.5 h-3.5" /> Type:
@@ -256,13 +417,14 @@ export const JobsPortal: React.FC<JobsPortalProps> = ({
                 ))}
               </div>
 
-              {(searchTitle || searchLocation || searchCompany || selectedType !== 'ALL') && (
+              {(searchTitle || searchLocation || searchCompany || selectedType !== 'ALL' || statusFilter !== 'ALL') && (
                 <button
                   onClick={() => {
                     setSearchTitle('');
                     setSearchLocation('');
                     setSearchCompany('');
                     setSelectedType('ALL');
+                    setStatusFilter('ALL');
                   }}
                   className="text-xs font-bold text-[#FF5A5F] hover:underline"
                 >
@@ -301,7 +463,7 @@ export const JobsPortal: React.FC<JobsPortalProps> = ({
                     {/* Header: Company & Job Type */}
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-100 flex items-center justify-center font-black text-sm text-indigo-700">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-100 flex items-center justify-center font-black text-sm text-indigo-700 shrink-0">
                           {job.company.charAt(0)}
                         </div>
                         <div>
@@ -314,9 +476,20 @@ export const JobsPortal: React.FC<JobsPortalProps> = ({
                         </div>
                       </div>
 
-                      <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-100">
-                        {job.jobType || 'Full-time'}
-                      </span>
+                      <div className="flex flex-col items-end gap-1">
+                        {job.isBooked ? (
+                          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-600 text-white shadow-xs animate-pulse">
+                            🔴 Booked
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-600 text-white shadow-xs">
+                            🟢 Available
+                          </span>
+                        )}
+                        <span className="text-[9px] font-bold text-slate-400">
+                          {job.jobType || 'Full-time'}
+                        </span>
+                      </div>
                     </div>
 
                     {/* Job Title */}
@@ -354,35 +527,129 @@ export const JobsPortal: React.FC<JobsPortalProps> = ({
                     </div>
 
                     {/* Description preview */}
-                    <p className="text-xs text-slate-500 leading-relaxed line-clamp-3">
+                    <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">
                       {job.description}
                     </p>
+
+                    {/* Quick Vacancy Status Toggle: Joined 🟢 Available & 🔴 Booked Switch (EKETA LOGAI) */}
+                    <div
+                      className={`p-2.5 sm:p-3 rounded-2xl border transition-all ${
+                        job.isBooked
+                          ? 'bg-rose-50/90 border-rose-200'
+                          : 'bg-emerald-50/90 border-emerald-200'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span
+                            className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                              job.isBooked ? 'bg-rose-600 animate-pulse' : 'bg-emerald-500'
+                            }`}
+                          />
+                          <span className="text-[11px] font-black text-slate-800 truncate">
+                            Status: {job.isBooked ? '🔴 Booked (Closed)' : '🟢 Available (Open)'}
+                          </span>
+                        </div>
+
+                        {/* Joined Segmented Switch (EKETA LOGAI) */}
+                        <div className="inline-flex p-0.5 rounded-xl bg-slate-200/90 border border-slate-300 shadow-inner shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (job.isBooked) handleToggleJobStatusWithToast(job);
+                            }}
+                            className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all flex items-center gap-1 ${
+                              !job.isBooked
+                                ? 'bg-emerald-600 text-white shadow-xs'
+                                : 'text-slate-600 hover:text-emerald-700'
+                            }`}
+                            title="Set to 🟢 Available"
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-300" />
+                            <span>🟢 Available</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!job.isBooked) handleToggleJobStatusWithToast(job);
+                            }}
+                            className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all flex items-center gap-1 ${
+                              job.isBooked
+                                ? 'bg-rose-600 text-white shadow-xs'
+                                : 'text-slate-600 hover:text-rose-700'
+                            }`}
+                            title="Set to 🔴 Booked"
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-300" />
+                            <span>🔴 Booked</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <p className="text-[10px] text-slate-600 mt-1.5 leading-snug">
+                        {job.isBooked ? (
+                          <span className="text-rose-900 font-semibold">
+                            Position filled. Direct phone calls and WhatsApp are paused to prevent repeated calls.
+                          </span>
+                        ) : (
+                          <span className="text-emerald-900 font-semibold">
+                            Actively hiring. Candidates can call or message via WhatsApp directly.
+                          </span>
+                        )}
+                      </p>
+                    </div>
+
                   </div>
 
                   {/* Actions Bar */}
-                  <div className="pt-4 mt-4 border-t border-slate-100 flex items-center gap-2">
-                    <a
-                      href={`tel:${job.phone}`}
-                      className="flex-1 py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black text-xs flex items-center justify-center gap-1.5 shadow-sm transition"
-                    >
-                      <Phone className="w-3.5 h-3.5" />
-                      <span>Call Employer</span>
-                    </a>
+                  <div className="pt-3 mt-3 border-t border-slate-100 flex items-center gap-2">
+                    {job.isBooked ? (
+                      <>
+                        <button
+                          disabled
+                          className="flex-1 py-2.5 px-3 bg-slate-200 text-slate-400 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 cursor-not-allowed"
+                          title="Position filled - calls paused"
+                        >
+                          <Phone className="w-3.5 h-3.5" />
+                          <span>Calls Paused</span>
+                        </button>
 
-                    <a
-                      href={`https://wa.me/91${job.phone}?text=Hi%20${encodeURIComponent(
-                        job.company
-                      )},%20I%20saw%20your%20job%20vacancy%20"${encodeURIComponent(
-                        job.title
-                      )}"%20on%20NestFinder.%20I%20would%20like%20to%20apply.`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="py-2.5 px-3 bg-[#25D366] hover:bg-[#1EBE5D] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1 transition shadow-sm"
-                      title="Apply via WhatsApp"
-                    >
-                      <MessageCircle className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">WhatsApp</span>
-                    </a>
+                        <button
+                          disabled
+                          className="py-2.5 px-3 bg-slate-200 text-slate-400 rounded-xl font-bold text-xs flex items-center justify-center gap-1 cursor-not-allowed"
+                          title="Position filled - WhatsApp paused"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" />
+                          <span>Paused</span>
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <a
+                          href={`tel:${job.phone}`}
+                          className="flex-1 py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black text-xs flex items-center justify-center gap-1.5 shadow-sm transition"
+                        >
+                          <Phone className="w-3.5 h-3.5" />
+                          <span>Call Employer</span>
+                        </a>
+
+                        <a
+                          href={`https://wa.me/91${job.phone}?text=Hi%20${encodeURIComponent(
+                            job.company
+                          )},%20I%20saw%20your%20job%20vacancy%20"${encodeURIComponent(
+                            job.title
+                          )}"%20on%20NestFinder.%20I%20would%20like%20to%20apply.`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="py-2.5 px-3 bg-[#25D366] hover:bg-[#1EBE5D] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1 transition shadow-sm"
+                          title="Apply via WhatsApp"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">WhatsApp</span>
+                        </a>
+                      </>
+                    )}
                   </div>
 
                 </div>
@@ -585,6 +852,45 @@ export const JobsPortal: React.FC<JobsPortalProps> = ({
                   placeholder="Describe day-to-day duties, working hours, benefits (e.g. food/stay included), and required skills..."
                   className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#FF5A5F] focus:bg-white focus:outline-none font-semibold text-slate-800"
                 />
+              </div>
+
+              {/* Initial Status Selector: 🟢 Available vs 🔴 Booked (EKETA LOGAI) */}
+              <div className="sm:col-span-2 p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                <label className="block text-xs font-black text-slate-700 uppercase tracking-wide">
+                  Initial Vacancy Status
+                </label>
+                <div className="inline-flex p-1 rounded-xl bg-slate-200/90 border border-slate-300 shadow-inner">
+                  <button
+                    type="button"
+                    onClick={() => setInitialIsBooked(false)}
+                    className={`px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 ${
+                      !initialIsBooked
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-emerald-700'
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-emerald-300" />
+                    <span>🟢 Available (Open for Calls)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setInitialIsBooked(true)}
+                    className={`px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 ${
+                      initialIsBooked
+                        ? 'bg-rose-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-rose-700'
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-rose-300" />
+                    <span>🔴 Booked / Filled</span>
+                  </button>
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  {!initialIsBooked
+                    ? '🟢 Active listing: Candidates can call and WhatsApp you immediately.'
+                    : '🔴 Position marked filled: Contact buttons will be paused to prevent repeated calls.'}
+                </p>
               </div>
 
             </div>

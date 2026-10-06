@@ -27,6 +27,7 @@ export interface Property {
   facilities: string[];
   description: string;
   isVerified: boolean;
+  isBooked?: boolean; // When true, shown as "Currently Booked / Unavailable"
   listingUtr?: string;
   createdAt: string;
   genderRestriction?: 'Male only' | 'Female only' | 'Any / Family';
@@ -114,6 +115,7 @@ export interface JobVacancy {
   jobType?: 'Full-time' | 'Part-time' | 'Contract' | 'Internship';
   employerName?: string;
   postedAt: string;
+  isBooked?: boolean; // When true, shown as "Booked / Filled (পদ পূৰ্ণ হ'ল)", calls paused!
 }
 
 export interface PoliceVerification {

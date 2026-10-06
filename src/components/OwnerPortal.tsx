@@ -25,7 +25,13 @@ import {
   X,
   Trash2,
   KeyRound,
-  ArrowRight
+  ArrowRight,
+  Search,
+  Eye,
+  SlidersHorizontal,
+  ExternalLink,
+  CheckCircle2,
+  RefreshCw
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Property, PropertyType, SharingType } from '../types';
@@ -33,11 +39,15 @@ import { AVAILABLE_FACILITIES, SAMPLE_PHOTO_PRESETS } from '../data/initialPrope
 import { UpiPaymentQrCard } from './UpiPaymentQrCard';
 
 interface OwnerPortalProps {
+  properties: Property[];
+  onTogglePropertyStatus: (propertyId: string, isBooked: boolean) => void;
   onAddProperty: (property: Property) => void;
   onNavigateToExplore: () => void;
 }
 
 export const OwnerPortal: React.FC<OwnerPortalProps> = ({
+  properties,
+  onTogglePropertyStatus,
   onAddProperty,
   onNavigateToExplore
 }) => {
@@ -135,6 +145,35 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
     setForgotNewPass('');
     setForgotConfirmPass('');
     setForgotMsg(null);
+  };
+
+  // --- Owner Dashboard Navigation & Status States ---
+  const [ownerPortalTab, setOwnerPortalTab] = useState<'manage' | 'add'>('manage');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'available' | 'booked'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showAllProperties, setShowAllProperties] = useState(true);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [previewProperty, setPreviewProperty] = useState<Property | null>(null);
+  const [initialIsBooked, setInitialIsBooked] = useState(false);
+
+  // Status Toggle Handler with Instant Feedback
+  const handleToggleStatusWithToast = (prop: Property) => {
+    const nextStatus = !prop.isBooked;
+    onTogglePropertyStatus(prop.id, nextStatus);
+
+    if (nextStatus) {
+      setToastMessage(`🔴 "${prop.title}" marked as Booked / Full! Tenants will now see "Currently Unavailable (Rooms Full)" and calls are paused.`);
+    } else {
+      setToastMessage(`🟢 "${prop.title}" marked as Available! Tenants can now view and call you directly.`);
+    }
+
+    try {
+      confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+    } catch (e) {}
+
+    setTimeout(() => {
+      setToastMessage((curr) => (curr && curr.includes(prop.title) ? null : curr));
+    }, 4500);
   };
 
   // --- Property Registration Form States ---
@@ -464,6 +503,7 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
           description.trim() ||
           `Verified ${propertyType} in ${city}. Fully maintained with modern amenities and 24/7 security. Zero brokerage.`,
         isVerified: true,
+        isBooked: initialIsBooked,
         listingUtr: fakeUtr,
         genderRestriction,
         createdAt: new Date().toISOString()
@@ -899,22 +939,50 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
     );
   }
 
+  const currentCleanPhone = (ownerPhone || (typeof window !== 'undefined' ? localStorage.getItem('nestfinder_owner_phone') || '' : '')).replace(/\D/g, '').slice(-10);
+
+  const ownerMatchedProps = properties.filter((p) => {
+    if (showAllProperties) return true;
+    const propPhone = p.ownerPhone.replace(/\D/g, '').slice(-10);
+    return propPhone === currentCleanPhone || currentCleanPhone === '9876543210';
+  });
+
+  const filteredOwnerProps = ownerMatchedProps.filter((p) => {
+    if (statusFilter === 'available' && p.isBooked) return false;
+    if (statusFilter === 'booked' && !p.isBooked) return false;
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      return (
+        p.title.toLowerCase().includes(q) ||
+        p.city.toLowerCase().includes(q) ||
+        p.address.toLowerCase().includes(q) ||
+        p.propertyType.toLowerCase().includes(q)
+      );
+    }
+    return true;
+  });
+
+  const totalPropsCount = ownerMatchedProps.length;
+  const availablePropsCount = ownerMatchedProps.filter((p) => !p.isBooked).length;
+  const bookedPropsCount = ownerMatchedProps.filter((p) => p.isBooked).length;
+
   return (
     <div className="max-w-4xl mx-auto py-6 px-4">
       <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
         
         {/* Header */}
-        <div className="bg-gradient-to-r from-[#222222] via-[#2D2A32] to-[#222222] text-white p-6 sm:p-10 flex flex-col md:flex-row md:items-start justify-between gap-4">
+        <div className="bg-gradient-to-r from-[#222222] via-[#2D2A32] to-[#222222] text-white p-6 sm:p-8 flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#FF5A5F]/20 text-rose-300 text-xs font-bold mb-3 border border-[#FF5A5F]/30">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#FF5A5F]/20 text-rose-300 text-xs font-bold mb-2 border border-[#FF5A5F]/30">
               <ShieldCheck className="w-4 h-4 text-[#00A699]" />
-              <span>Property Owner Registration & Verification</span>
+              <span>Owner Dashboard & Room Availability Control</span>
             </div>
-            <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-              List Your PG, Hostel, or Rental House
+            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              Property Owner Portal
             </h2>
-            <p className="text-slate-300 text-xs sm:text-base mt-2 max-w-2xl leading-relaxed">
-              Reach thousands of students and working professionals looking for verified accommodations. Zero commission, direct tenant calls & WhatsApp.
+            <p className="text-slate-300 text-xs sm:text-sm mt-1 max-w-2xl leading-relaxed">
+              Welcome back, <span className="text-white font-bold">{ownerName || 'Property Owner'}</span> (+91 {ownerPhone || '9876543210'}). Manage room availability and pause repeated incoming tenant calls when fully booked.
             </p>
           </div>
           
@@ -928,8 +996,393 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
           </button>
         </div>
 
-        {/* Form Container */}
-        <form onSubmit={handleSubmit} className="p-6 sm:p-10 space-y-8">
+        {/* Dashboard Sub-Navigation Tabs */}
+        <div className="bg-slate-100 p-2 sm:p-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setOwnerPortalTab('manage')}
+              className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-2 transition ${
+                ownerPortalTab === 'manage'
+                  ? 'bg-slate-900 text-white shadow-md'
+                  : 'bg-white text-slate-700 hover:bg-slate-200 border border-slate-200'
+              }`}
+            >
+              <Building className="w-4 h-4 text-[#00A699]" />
+              <span>My Properties & Room Status</span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-[#FF5A5F] text-white">
+                {totalPropsCount}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setOwnerPortalTab('add')}
+              className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black flex items-center gap-2 transition ${
+                ownerPortalTab === 'add'
+                  ? 'bg-slate-900 text-white shadow-md'
+                  : 'bg-white text-slate-700 hover:bg-slate-200 border border-slate-200'
+              }`}
+            >
+              <PlusCircle className="w-4 h-4 text-[#FF5A5F]" />
+              <span>+ List New Property</span>
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={onNavigateToExplore}
+            className="text-xs font-bold text-slate-600 hover:text-slate-900 flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-slate-200/80 transition"
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
+            <span>View Public Explore Feed</span>
+          </button>
+        </div>
+
+        {/* Toast Notification Banner */}
+        {toastMessage && (
+          <div className="m-4 p-4 rounded-2xl bg-slate-900 text-white border border-slate-700 flex items-center justify-between gap-3 shadow-lg animate-in slide-in-from-top duration-300">
+            <div className="flex items-center gap-2.5 text-xs sm:text-sm font-bold">
+              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+              <span>{toastMessage}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setToastMessage(null)}
+              className="text-slate-400 hover:text-white text-xs px-2 py-1"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {ownerPortalTab === 'manage' ? (
+          /* =============================================================== */
+          /* TAB 1: MY PROPERTIES & ROOM AVAILABILITY STATUS MANAGER */
+          /* =============================================================== */
+          <div className="p-6 sm:p-8 space-y-6">
+            
+            {/* Top 3 Summary Metric Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 shadow-xs">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                  Total Properties
+                </span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-black text-slate-900">{totalPropsCount}</span>
+                  <span className="text-xs font-semibold text-slate-500">Listed on NestFinder</span>
+                </div>
+              </div>
+
+              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 shadow-xs">
+                <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider block mb-1 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                  <span>🟢 Available (Active)</span>
+                </span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-black text-emerald-800">{availablePropsCount}</span>
+                  <span className="text-xs font-semibold text-emerald-700">Receiving Direct Calls</span>
+                </div>
+              </div>
+
+              <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 shadow-xs">
+                <span className="text-[11px] font-bold text-rose-800 uppercase tracking-wider block mb-1 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                  <span>🔴 Booked / Full</span>
+                </span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-black text-rose-800">{bookedPropsCount}</span>
+                  <span className="text-xs font-semibold text-rose-700">Calls Paused (Unavailable)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Feature Highlight Banner: Stop Repeated Calls */}
+            <div className="bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 border border-amber-200 rounded-2xl p-4 sm:p-5 flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 mt-0.5">
+                <SlidersHorizontal className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-black text-amber-950 flex items-center gap-2">
+                  <span>ৰুমৰ অৱস্থা সলনি কৰক (Property Status Toggle Switch)</span>
+                  <span className="px-2 py-0.5 text-[10px] bg-amber-200 text-amber-800 font-extrabold rounded-full">
+                    No Repeated Calls
+                  </span>
+                </h4>
+                <p className="text-xs text-amber-900 font-medium leading-relaxed">
+                  ৰুম বা পিজি সম্পূর্ণ বুক হৈ গ'লে তলৰ বুটামটো <span className="font-bold text-rose-700">"Booked / Full"</span> লৈ সলনি কৰক। ভাড়াতীয়াই ইয়াক <span className="font-bold text-slate-800">"Currently Unavailable"</span> হিচাপে দেখিব আৰু ফোন বা হোৱাটছএপ কৰিব নোৱাৰিব। পুনৰ খালী হ'লে এটি ক্লিকেৰে <span className="font-bold text-emerald-700">"Available"</span> কৰি দিব পাৰিব!
+                </p>
+              </div>
+            </div>
+
+            {/* Filter and Search Bar */}
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+              {/* Search input */}
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by building name, area, or city..."
+                  className="w-full pl-9 pr-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-[#FF5A5F]"
+                />
+              </div>
+
+              {/* Status Filter Buttons */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('all')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+                    statusFilter === 'all'
+                      ? 'bg-slate-900 text-white'
+                      : 'bg-white text-slate-600 hover:bg-slate-200 border border-slate-200'
+                  }`}
+                >
+                  All ({totalPropsCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('available')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 ${
+                    statusFilter === 'available'
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-white text-emerald-700 hover:bg-emerald-50 border border-emerald-200'
+                  }`}
+                >
+                  <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                  <span>Available ({availablePropsCount})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('booked')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 ${
+                    statusFilter === 'booked'
+                      ? 'bg-rose-600 text-white'
+                      : 'bg-white text-rose-700 hover:bg-rose-50 border border-rose-200'
+                  }`}
+                >
+                  <span className="w-2 h-2 rounded-full bg-rose-400"></span>
+                  <span>Booked / Full ({bookedPropsCount})</span>
+                </button>
+
+                {/* Tester Toggle: Show all vs only matching owner */}
+                <button
+                  type="button"
+                  onClick={() => setShowAllProperties(!showAllProperties)}
+                  className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold border transition ${
+                    showAllProperties
+                      ? 'bg-amber-100 border-amber-300 text-amber-900'
+                      : 'bg-white border-slate-200 text-slate-600'
+                  }`}
+                  title="Toggle testing view to manage all listings"
+                >
+                  {showAllProperties ? 'Showing All Listings (Demo Mode)' : 'My Phone Only'}
+                </button>
+              </div>
+            </div>
+
+            {/* Property Cards List */}
+            {filteredOwnerProps.length === 0 ? (
+              <div className="py-12 text-center bg-slate-50 border border-slate-200 rounded-3xl p-6">
+                <Building className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                <h4 className="text-base font-bold text-slate-800">No properties found</h4>
+                <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto mb-4">
+                  No properties matched your current filter or search criteria.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => { setStatusFilter('all'); setSearchQuery(''); }}
+                  className="px-4 py-2 bg-slate-200 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-300 transition"
+                >
+                  Reset Filters
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filteredOwnerProps.map((prop) => (
+                  <div
+                    key={prop.id}
+                    className={`bg-white rounded-3xl border transition-all duration-200 overflow-hidden shadow-xs hover:shadow-md ${
+                      prop.isBooked
+                        ? 'border-rose-200 hover:border-rose-300'
+                        : 'border-emerald-200 hover:border-emerald-300'
+                    }`}
+                  >
+                    <div className="p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-5">
+                      
+                      {/* Left: Thumbnail & Property Info */}
+                      <div className="flex items-start gap-4 flex-1 min-w-0">
+                        <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden shrink-0 bg-slate-100 border border-slate-200">
+                          <img
+                            src={prop.images[0]}
+                            alt={prop.title}
+                            className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
+                          />
+                          <span className="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">
+                            4 Photos
+                          </span>
+                        </div>
+
+                        <div className="space-y-1.5 flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="px-2.5 py-0.5 text-[10px] font-extrabold rounded-full bg-slate-100 text-slate-800 border border-slate-200">
+                              {prop.propertyType}
+                            </span>
+                            <span className="px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-600">
+                              {prop.sharingType}
+                            </span>
+                            {prop.isBooked ? (
+                              <span className="px-2.5 py-0.5 text-[10px] font-black rounded-full bg-rose-600 text-white flex items-center gap-1 animate-pulse">
+                                <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
+                                <span>Booked / Full</span>
+                              </span>
+                            ) : (
+                              <span className="px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-emerald-600 text-white flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
+                                <span>Available</span>
+                              </span>
+                            )}
+                          </div>
+
+                          <h3 className="text-base font-black text-slate-900 truncate">
+                            {prop.title}
+                          </h3>
+
+                          <p className="text-xs text-slate-500 flex items-center gap-1 truncate">
+                            <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span className="truncate">{prop.address}, {prop.city}</span>
+                          </p>
+
+                          <div className="flex items-center gap-3 pt-1 text-xs">
+                            <span className="font-black text-slate-900">
+                              ₹{prop.monthlyRent.toLocaleString('en-IN')}{' '}
+                              <span className="text-[10px] font-normal text-slate-500">/ month</span>
+                            </span>
+                            <span className="text-slate-300">•</span>
+                            <span className="text-[11px] text-slate-500">
+                              Deposit: ₹{prop.securityDeposit.toLocaleString('en-IN')}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right: The Prominent Status Toggle Switch */}
+                      <div className="md:w-80 shrink-0">
+                        <div
+                          className={`p-3.5 rounded-2xl border transition-all ${
+                            prop.isBooked
+                              ? 'bg-rose-50/80 border-rose-200'
+                              : 'bg-emerald-50/80 border-emerald-200'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-3 mb-2">
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className={`w-2.5 h-2.5 rounded-full ${
+                                  prop.isBooked ? 'bg-rose-600 animate-pulse' : 'bg-emerald-500'
+                                }`}
+                              />
+                              <span className="text-xs font-black text-slate-900">
+                                Room Status:
+                              </span>
+                              <span
+                                className={`text-[11px] font-black px-2 py-0.5 rounded-full ${
+                                  prop.isBooked
+                                    ? 'bg-rose-600 text-white'
+                                    : 'bg-emerald-600 text-white'
+                                }`}
+                              >
+                                {prop.isBooked ? 'Booked / Full' : 'Available'}
+                              </span>
+                            </div>
+
+                            {/* The Toggle Switch Button */}
+                            <button
+                              type="button"
+                              onClick={() => handleToggleStatusWithToast(prop)}
+                              role="switch"
+                              aria-checked={!prop.isBooked}
+                              className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                                prop.isBooked
+                                  ? 'bg-rose-600 focus:ring-rose-500'
+                                  : 'bg-emerald-600 focus:ring-emerald-500'
+                              }`}
+                              title={
+                                prop.isBooked
+                                  ? 'Click to flip switch to Available'
+                                  : 'Click to flip switch to Booked / Full'
+                              }
+                            >
+                              <span
+                                className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition duration-200 ease-in-out ${
+                                  prop.isBooked ? 'translate-x-1' : 'translate-x-8'
+                                }`}
+                              />
+                            </button>
+                          </div>
+
+                          <p className="text-[11px] text-slate-600 leading-snug">
+                            {prop.isBooked ? (
+                              <span className="text-rose-900 font-semibold">
+                                🔴 <strong>Currently Unavailable</strong>: Calls and WhatsApp are paused so tenants do not call repeatedly.
+                              </span>
+                            ) : (
+                              <span className="text-emerald-900 font-semibold">
+                                🟢 <strong>Currently Available</strong>: Active for student and tenant inquiries via phone & WhatsApp.
+                              </span>
+                            )}
+                          </p>
+
+                          {/* Quick Action Preview & Explore */}
+                          <div className="mt-2.5 pt-2.5 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
+                            <button
+                              type="button"
+                              onClick={() => setPreviewProperty(prop)}
+                              className="font-bold text-slate-700 hover:text-slate-900 flex items-center gap-1 hover:underline"
+                            >
+                              <Eye className="w-3.5 h-3.5 text-slate-500" />
+                              <span>Preview Tenant View</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={onNavigateToExplore}
+                              className="font-bold text-[#FF5A5F] hover:underline flex items-center gap-1"
+                            >
+                              <span>View on Explore →</span>
+                            </button>
+                          </div>
+
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Bottom Button to list another property */}
+            <div className="pt-4 border-t border-slate-200 text-center">
+              <button
+                type="button"
+                onClick={() => setOwnerPortalTab('add')}
+                className="px-6 py-3 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-black inline-flex items-center gap-2 shadow-md transition"
+              >
+                <PlusCircle className="w-4 h-4 text-[#FF5A5F]" />
+                <span>List Another PG / Flat Property</span>
+              </button>
+            </div>
+
+          </div>
+        ) : (
+          /* =============================================================== */
+          /* TAB 2: LIST NEW PROPERTY FORM */
+          /* =============================================================== */
+          <form onSubmit={handleSubmit} className="p-6 sm:p-10 space-y-8">
           
           {/* Section 1: Property & Location Details */}
           <div className="space-y-4">
@@ -1105,6 +1558,57 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
                       <span>{gender}</span>
                     </label>
                   ))}
+                </div>
+              </div>
+
+              {/* Initial Room Availability Status */}
+              <div className="sm:col-span-3 pt-2">
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5 flex items-center justify-between">
+                  <span>Initial Room Availability Status *</span>
+                  <span className="text-[11px] font-normal text-slate-500">
+                    (You can flip this anytime later in "My Properties")
+                  </span>
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setInitialIsBooked(false)}
+                    className={`p-3.5 rounded-2xl border text-xs font-bold flex items-center justify-start gap-3 transition text-left ${
+                      !initialIsBooked
+                        ? 'border-emerald-500 bg-emerald-50/90 text-emerald-900 shadow-sm ring-2 ring-emerald-500/30'
+                        : 'border-slate-200 bg-[#F7F9FB] text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="font-extrabold text-xs">🟢 Available (Ready for Tenants)</div>
+                      <div className="text-[10px] text-emerald-700 font-medium">
+                        Active in directory • Tenants can call & chat directly
+                      </div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setInitialIsBooked(true)}
+                    className={`p-3.5 rounded-2xl border text-xs font-bold flex items-center justify-start gap-3 transition text-left ${
+                      initialIsBooked
+                        ? 'border-rose-500 bg-rose-50/90 text-rose-900 shadow-sm ring-2 ring-rose-500/30'
+                        : 'border-slate-200 bg-[#F7F9FB] text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
+                      <AlertCircle className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="font-extrabold text-xs">🔴 Booked / Full (Currently Unavailable)</div>
+                      <div className="text-[10px] text-rose-700 font-medium">
+                        Pauses direct calls & WhatsApp so you are not called repeatedly
+                      </div>
+                    </div>
+                  </button>
                 </div>
               </div>
             </div>
@@ -1544,7 +2048,146 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
           </div>
 
         </form>
+        )}
+
       </div>
+
+      {/* Tenant View Simulation Modal */}
+      {previewProperty && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-md rounded-3xl border border-slate-200 shadow-2xl overflow-hidden animate-in zoom-in-95">
+            
+            <div className="p-4 bg-slate-900 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Eye className="w-4 h-4 text-[#FF5A5F]" />
+                <div>
+                  <h4 className="text-xs font-black">Live Tenant Perspective Preview</h4>
+                  <p className="text-[10px] text-slate-300">How tenants currently see this listing in the app</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewProperty(null)}
+                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div className="flex items-center gap-3">
+                <img
+                  src={previewProperty.images[0]}
+                  alt={previewProperty.title}
+                  className="w-16 h-16 rounded-xl object-cover shrink-0"
+                />
+                <div className="min-w-0">
+                  <h5 className="text-xs font-black text-slate-900 truncate">{previewProperty.title}</h5>
+                  <p className="text-[11px] text-slate-500">{previewProperty.propertyType} • {previewProperty.city}</p>
+                  <p className="text-xs font-black text-[#FF5A5F]">₹{previewProperty.monthlyRent} / month</p>
+                </div>
+              </div>
+
+              {previewProperty.isBooked ? (
+                /* BOOKED / CURRENTLY UNAVAILABLE SIMULATION */
+                <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-rose-900 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-rose-600 animate-pulse"></span>
+                      <span>Currently Unavailable (Rooms Full)</span>
+                    </span>
+                    <span className="text-[10px] bg-rose-600 text-white font-extrabold px-2 py-0.5 rounded-full uppercase">
+                      Booked
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-xl border border-rose-100 text-xs text-rose-950 font-medium leading-relaxed">
+                    "The owner has marked this property as fully occupied. Direct calls and visits are paused so the owner is not called repeatedly."
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="p-2 bg-slate-200 text-slate-400 font-bold rounded-xl text-center flex items-center justify-center gap-1">
+                      <Phone className="w-3.5 h-3.5" />
+                      <span>Calls Paused</span>
+                    </div>
+                    <div className="p-2 bg-slate-200 text-slate-400 font-bold rounded-xl text-center flex items-center justify-center gap-1">
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      <span>WhatsApp Paused</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-rose-200 flex items-center justify-between">
+                    <span className="text-[11px] text-rose-800 font-bold">Have rooms opened up?</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleToggleStatusWithToast(previewProperty);
+                        setPreviewProperty({ ...previewProperty, isBooked: false });
+                      }}
+                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-xs transition"
+                    >
+                      Flip to Available 🟢
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* AVAILABLE SIMULATION */
+                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-emerald-900 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                      <span>Currently Available for Rent</span>
+                    </span>
+                    <span className="text-[10px] bg-emerald-600 text-white font-extrabold px-2 py-0.5 rounded-full uppercase">
+                      Available
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-xl border border-emerald-100 text-xs text-emerald-900 font-medium leading-relaxed">
+                    "Direct Owner Verified. Verified pass tenants can call and WhatsApp you directly to schedule visits."
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs font-bold text-white">
+                    <div className="p-2 bg-[#00A699] rounded-xl text-center flex items-center justify-center gap-1 shadow-xs">
+                      <Phone className="w-3.5 h-3.5" />
+                      <span>Call Owner</span>
+                    </div>
+                    <div className="p-2 bg-[#25D366] rounded-xl text-center flex items-center justify-center gap-1 shadow-xs">
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      <span>WhatsApp</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-emerald-200 flex items-center justify-between">
+                    <span className="text-[11px] text-emerald-800 font-bold">Are rooms fully occupied?</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleToggleStatusWithToast(previewProperty);
+                        setPreviewProperty({ ...previewProperty, isBooked: true });
+                      }}
+                      className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-black text-xs rounded-xl shadow-xs transition"
+                    >
+                      Flip to Booked 🔴
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="text-center pt-1">
+                <button
+                  type="button"
+                  onClick={() => setPreviewProperty(null)}
+                  className="text-xs font-bold text-slate-500 hover:text-slate-800"
+                >
+                  Close Preview
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 };

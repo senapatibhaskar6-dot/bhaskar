@@ -90,7 +90,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white border border-indigo-500 rounded-lg flex items-center gap-1 shadow-md transition cursor-pointer"
             >
               <Briefcase className="w-3 h-3 text-amber-300" />
-              <span>Jobs Portal (New)</span>
+              <span>Jobs Portal (🟢 Available)</span>
             </button>
           )}
           {onNavigateToPolice && (

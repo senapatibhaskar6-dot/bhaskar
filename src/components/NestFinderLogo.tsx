@@ -1,5 +1,5 @@
 import React from 'react';
-import logoIcon from '../assets/images/nestfinder_official_logo.jpg';
+import logoIcon from '../assets/images/user_uploaded_logo.jpg';
 
 interface NestFinderLogoProps {
   className?: string;
@@ -31,7 +31,7 @@ export const NestFinderLogo: React.FC<NestFinderLogoProps> = ({
       src={logoUrl}
       alt="NestFinder Logo"
       referrerPolicy="no-referrer"
-      className={`shrink-0 ${sizeClasses} object-contain rounded-xl transition-all duration-300`}
+      className={`shrink-0 ${sizeClasses} object-contain rounded-xl transition-all duration-300 shadow-xs`}
     />
   );
 
@@ -59,7 +59,7 @@ export const NestFinderLogo: React.FC<NestFinderLogoProps> = ({
         <div className="mt-2.5 flex items-center gap-2">
           <span className="h-[2px] w-6 bg-gradient-to-r from-transparent to-[#FFD700]" />
           <span className="text-xs sm:text-sm font-bold text-amber-300/90 uppercase tracking-wider drop-shadow-sm">
-            Zero Brokerage PG & Rental Platform
+            Zero Brokerage PGs, Hostels, Rentals & Jobs
           </span>
           <span className="h-[2px] w-6 bg-gradient-to-l from-transparent to-[#FFD700]" />
         </div>
@@ -85,7 +85,7 @@ export const NestFinderLogo: React.FC<NestFinderLogoProps> = ({
           </span>
         </div>
         <p className="text-xs font-semibold text-slate-500">
-          Direct PGs, Hostels & Rental Homes
+          Direct PGs, Hostels, Rental Homes & Jobs
         </p>
       </div>
     </div>

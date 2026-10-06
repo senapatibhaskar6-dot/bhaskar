@@ -10,7 +10,8 @@ import {
   Images,
   ShieldCheck,
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  AlertCircle
 } from 'lucide-react';
 import { Property } from '../types';
 
@@ -21,6 +22,8 @@ interface PropertyCardProps {
   onOpenGallery: (property: Property) => void;
   onBookAppointment: (property: Property) => void;
   onRateProperty?: (propertyId: string, rating: number) => void;
+  currentOwnerPhone?: string;
+  onTogglePropertyStatus?: (propertyId: string, isBooked: boolean) => void;
 }
 
 export const PropertyCard: React.FC<PropertyCardProps> = ({
@@ -29,10 +32,17 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   onOpenPassModal,
   onOpenGallery,
   onBookAppointment,
-  onRateProperty
+  onRateProperty,
+  currentOwnerPhone,
+  onTogglePropertyStatus
 }) => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
+
+  const isOwnerLoggedIn = typeof window !== 'undefined' && localStorage.getItem('nestfinder_owner_logged_in') === 'true';
+  const cleanOwnerPhone = (currentOwnerPhone || (typeof window !== 'undefined' ? localStorage.getItem('nestfinder_owner_phone') || '' : '')).replace(/\D/g, '').slice(-10);
+  const cleanPropOwnerPhone = property.ownerPhone.replace(/\D/g, '').slice(-10);
+  const isOwnerOfThis = Boolean(isOwnerLoggedIn && (cleanOwnerPhone === cleanPropOwnerPhone || cleanOwnerPhone === '9876543210'));
 
   const getPropertyDaysLeft = () => {
     if (!property.createdAt || !property.listingUtr) return null;
@@ -79,6 +89,17 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
 
           {/* Badges on Top */}
           <div className="absolute top-3 left-3 flex flex-wrap items-center gap-1.5 z-10">
+            {property.isBooked ? (
+              <span className="px-2.5 py-1 text-xs font-black bg-rose-600/95 text-white rounded-xl shadow-lg border border-white/20 flex items-center gap-1.5 animate-pulse">
+                <span className="w-2 h-2 rounded-full bg-white"></span>
+                <span>Booked / Full</span>
+              </span>
+            ) : (
+              <span className="px-2.5 py-1 text-xs font-bold bg-emerald-600/95 text-white rounded-xl shadow-md flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
+                <span>Available</span>
+              </span>
+            )}
             <span className={`px-3 py-1 text-xs font-bold rounded-xl shadow-md ${getTypeBadgeColor(property.propertyType)}`}>
               {property.propertyType}
             </span>
@@ -224,6 +245,57 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
 
         {/* OWNER CONTACT SECTION: LOCKED vs UNLOCKED */}
         <div className="pt-3 border-t border-slate-100 mt-auto">
+
+          {/* Owner Direct Status Toggle Switch (Available / Booked) */}
+          {onTogglePropertyStatus && (isOwnerOfThis || isOwnerLoggedIn) && (
+            <div className="mb-3 p-3 rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 text-white border border-slate-700 shadow-md animate-in fade-in duration-200">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span
+                    className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                      property.isBooked ? 'bg-rose-500 animate-pulse' : 'bg-emerald-400'
+                    }`}
+                  />
+                  <div className="truncate">
+                    <div className="text-xs font-black flex items-center gap-1.5 text-white">
+                      <span>Owner Status:</span>
+                      <span className={property.isBooked ? 'text-rose-400 font-black' : 'text-emerald-400 font-black'}>
+                        {property.isBooked ? 'Booked / Full 🔴' : 'Available 🟢'}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-300 truncate">
+                      {property.isBooked
+                        ? 'Tenants see "Currently Unavailable" (Calls paused)'
+                        : 'Tenants can call & WhatsApp directly'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Status Toggle Switch */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onTogglePropertyStatus(property.id, !property.isBooked);
+                    }}
+                    role="switch"
+                    aria-checked={!property.isBooked}
+                    className={`relative inline-flex h-6 w-12 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#FF5A5F] focus:ring-offset-2 ${
+                      property.isBooked ? 'bg-rose-600' : 'bg-emerald-500'
+                    }`}
+                    title={property.isBooked ? "Click to toggle Available" : "Click to toggle Booked / Full"}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition duration-200 ease-in-out ${
+                        property.isBooked ? 'translate-x-1' : 'translate-x-7'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           {daysLeft === 0 ? (
             /* OWNER SUBSCRIPTION EXPIRED STATE (Always Locked) */
             <div className="bg-gradient-to-r from-red-50 via-rose-50/20 to-orange-50/40 border border-red-200 rounded-2xl p-4 text-center">
@@ -239,8 +311,72 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
                 <span>Awaiting Owner Renewal</span>
               </div>
             </div>
+          ) : property.isBooked ? (
+            /* BOOKED / CURRENTLY UNAVAILABLE STATE (Prevents repeated tenant calls) */
+            <div className="bg-gradient-to-r from-rose-50 via-slate-50 to-rose-50 border border-rose-200/90 rounded-2xl p-4 shadow-xs space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-7 h-7 rounded-full bg-slate-700 text-white flex items-center justify-center font-bold text-xs">
+                    {property.ownerName.charAt(0)}
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-[#222222] block leading-tight">
+                      {property.ownerName}
+                    </span>
+                    <span className="text-[10px] text-slate-500 font-semibold">
+                      Property Owner
+                    </span>
+                  </div>
+                </div>
+                <span className="text-[10px] bg-rose-600 text-white font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                  Booked / Full
+                </span>
+              </div>
+
+              {/* Status explanation notice */}
+              <div className="p-3 bg-rose-100/70 border border-rose-200/80 rounded-xl text-xs text-rose-950 font-semibold flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-extrabold">Currently Unavailable (Rooms Full)</p>
+                  <p className="text-[11px] text-rose-800 font-medium mt-0.5 leading-snug">
+                    The owner has marked this property as fully occupied. Direct calls and visits are paused so the owner is not called repeatedly.
+                  </p>
+                </div>
+              </div>
+
+              {/* Disabled Action Buttons */}
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  disabled
+                  className="py-2.5 px-3 bg-slate-200 text-slate-400 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 cursor-not-allowed"
+                  title="Owner marked rooms as full - calls paused"
+                >
+                  <Phone className="w-3.5 h-3.5" />
+                  <span>Calls Paused</span>
+                </button>
+                <button
+                  disabled
+                  className="py-2.5 px-3 bg-slate-200 text-slate-400 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 cursor-not-allowed"
+                  title="Owner marked rooms as full - WhatsApp paused"
+                >
+                  <MessageCircle className="w-3.5 h-3.5" />
+                  <span>WhatsApp Paused</span>
+                </button>
+              </div>
+
+              {/* Still allow scheduling future visit when rooms open */}
+              {hasPass && (
+                <button
+                  onClick={() => onBookAppointment(property)}
+                  className="w-full py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition"
+                >
+                  <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Schedule Future Visit Enquiry</span>
+                </button>
+              )}
+            </div>
           ) : hasPass ? (
-            /* UNLOCKED STATE */
+            /* UNLOCKED & AVAILABLE STATE */
             <div className="bg-gradient-to-r from-[#00A699]/10 via-teal-50 to-[#00A699]/10 border border-[#00A699]/40 rounded-2xl p-4 shadow-xs">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-1.5">
@@ -257,7 +393,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
                   </div>
                 </div>
                 <span className="text-[10px] bg-[#00A699] text-white font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                  Unlocked
+                  Available
                 </span>
               </div>
 

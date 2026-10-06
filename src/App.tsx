@@ -177,6 +177,21 @@ export default function App() {
     setJobs((prev) => [newJob, ...prev]);
   };
 
+  const handleToggleJobStatus = (jobId: string, isBooked: boolean) => {
+    setJobs((prev) =>
+      prev.map((j) => {
+        if (j.id === jobId) {
+          const updated = { ...j, isBooked };
+          if (supabaseConfig.isConnected) {
+            syncJobToSupabase(updated, supabaseConfig).catch(() => {});
+          }
+          return updated;
+        }
+        return j;
+      })
+    );
+  };
+
   // --- Police Verification Records State ---
   const [verifications, setVerifications] = useState<PoliceVerification[]>(() => {
     const saved = localStorage.getItem('nestfinder_police_verifications');
@@ -350,6 +365,21 @@ export default function App() {
     );
   };
 
+  const handleTogglePropertyStatus = (propertyId: string, isBooked: boolean) => {
+    setProperties((prev) =>
+      prev.map((p) => {
+        if (p.id === propertyId) {
+          const updated = { ...p, isBooked };
+          if (supabaseConfig.isConnected) {
+            syncPropertyToSupabase(updated, supabaseConfig).catch(() => {});
+          }
+          return updated;
+        }
+        return p;
+      })
+    );
+  };
+
   const handleSyncAll = async () => {
     if (!supabaseConfig.isConnected) return;
     for (const prop of properties) {
@@ -497,6 +527,8 @@ export default function App() {
                     onOpenGallery={(prop) => setGalleryProperty(prop)}
                     onBookAppointment={(prop) => setAppointmentProperty(prop)}
                     onRateProperty={handleRateProperty}
+                    currentOwnerPhone={localStorage.getItem('nestfinder_owner_phone') || ''}
+                    onTogglePropertyStatus={handleTogglePropertyStatus}
                   />
                 ))}
               </div>
@@ -529,6 +561,7 @@ export default function App() {
         <JobsPortal
           jobs={jobs}
           onAddJob={handleAddJob}
+          onToggleJobStatus={handleToggleJobStatus}
           supabaseConfig={supabaseConfig}
         />
       ) : activeTab === 'police' ? (
@@ -543,6 +576,8 @@ export default function App() {
       ) : (
         /* Owner Listing Portal View */
         <OwnerPortal
+          properties={properties}
+          onTogglePropertyStatus={handleTogglePropertyStatus}
           onAddProperty={handleAddProperty}
           onNavigateToExplore={() => setActiveTab('explore')}
         />

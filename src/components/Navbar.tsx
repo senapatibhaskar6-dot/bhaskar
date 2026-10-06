@@ -84,8 +84,9 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <Briefcase className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-600" />
             <span>Jobs</span>
-            <span className="hidden sm:inline text-[9px] bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded font-black">
-              New
+            <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-black inline-flex items-center gap-1 border border-emerald-300 shadow-2xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>Available</span>
             </span>
           </button>
 

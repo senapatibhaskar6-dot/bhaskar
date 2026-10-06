@@ -11,9 +11,9 @@ export const INITIAL_PROPERTIES: Property[] = [
     landmark: 'Opposite Sony World Signal',
     monthlyRent: 8500,
     securityDeposit: 8500,
-    ownerName: 'Ramesh Reddy',
-    ownerPhone: '+919845012345',
-    ownerWhatsapp: '919845012345',
+    ownerName: 'Bhaskar Senapati (Demo Owner)',
+    ownerPhone: '+919876543210',
+    ownerWhatsapp: '919876543210',
     images: [
       'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=800&q=80',
       'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=800&q=80',
@@ -23,6 +23,7 @@ export const INITIAL_PROPERTIES: Property[] = [
     facilities: ['Wi-Fi 200 Mbps', '3 Times South & North Indian Meals', 'AC / Geyser', 'Daily Housekeeping', 'RO Drinking Water', 'Washing Machine', 'CCTV & Biometric Access', 'Two Wheeler Parking'],
     description: 'Premier student PG just 3 minutes walk from college. Clean, sanitized double sharing rooms with attached washrooms, high speed fiber wifi, and unlimited home cooked food.',
     isVerified: true,
+    isBooked: false,
     listingUtr: '423189098712',
     createdAt: '2026-08-20T10:00:00Z',
     genderRestriction: 'Male only'
@@ -101,6 +102,7 @@ export const INITIAL_PROPERTIES: Property[] = [
     facilities: ['Quiet Study Room with AC', 'Nutritious 4-Time Mess Meal', 'Doctor on Call', 'Weekly Laundry', 'High Speed Wi-Fi', 'Wardens & Biometrics', 'RO Mineral Water'],
     description: 'Designed specially for NEET/JEE coaching students. Soundproof study atmosphere, ergonomic chairs, regular mess menu, and strict safety protocols.',
     isVerified: true,
+    isBooked: true,
     listingUtr: '423189098715',
     createdAt: '2026-08-25T11:45:00Z',
     genderRestriction: 'Male only'

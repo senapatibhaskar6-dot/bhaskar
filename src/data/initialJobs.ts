@@ -13,6 +13,7 @@ export const INITIAL_JOBS: JobVacancy[] = [
     description: 'Manage student inquiries, phone calls, fee records, and admission desk. Basic knowledge of computer and MS Excel required. Friendly working environment.',
     jobType: 'Full-time',
     employerName: 'Apex Institute HR',
+    isBooked: false,
     postedAt: '2026-10-04T10:00:00.000Z'
   },
   {
@@ -27,6 +28,7 @@ export const INITIAL_JOBS: JobVacancy[] = [
     description: 'Supervise daily hostel check-ins, mess food coordination, maintenance checks, and discipline. Free single room stay and 3 meals provided at the PG premises.',
     jobType: 'Full-time',
     employerName: 'Pranab Das (PG Owner)',
+    isBooked: false,
     postedAt: '2026-10-03T14:30:00.000Z'
   },
   {
@@ -41,6 +43,7 @@ export const INITIAL_JOBS: JobVacancy[] = [
     description: 'Handling day-to-day accounts, GST billing, vendor payments, and inventory verification in Tally ERP. Working hours: 10:00 AM to 6:30 PM.',
     jobType: 'Full-time',
     employerName: 'Mukesh Sharma',
+    isBooked: false,
     postedAt: '2026-10-02T11:00:00.000Z'
   },
   {
@@ -55,6 +58,7 @@ export const INITIAL_JOBS: JobVacancy[] = [
     description: 'Brewing espresso, serving cafe snacks, cashiering, and maintaining welcoming cafe atmosphere. Flexible morning & evening shifts available.',
     jobType: 'Full-time',
     employerName: 'Cafe Manager',
+    isBooked: true,
     postedAt: '2026-10-01T16:00:00.000Z'
   },
   {
