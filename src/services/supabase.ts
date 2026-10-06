@@ -1,5 +1,14 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { Property, TenantUser, Appointment, PaymentRecord, SupabaseConfig, AppReview } from '../types';
+import {
+  Property,
+  TenantUser,
+  Appointment,
+  PaymentRecord,
+  SupabaseConfig,
+  AppReview,
+  JobVacancy,
+  PoliceVerification
+} from '../types';
 
 let cachedClient: SupabaseClient | null = null;
 let currentConfigKey = '';
@@ -210,6 +219,158 @@ export async function fetchRemoteProperties(config: SupabaseConfig): Promise<Pro
   }
 }
 
+// ----------------- JOBS VACANCY SUPABASE SYNC -----------------
+
+export async function syncJobToSupabase(job: JobVacancy, config: SupabaseConfig): Promise<boolean> {
+  const client = getSupabaseClient(config);
+  if (!client) return false;
+
+  try {
+    const { error } = await client.from('jobs').upsert({
+      id: job.id,
+      title: job.title,
+      company: job.company,
+      location: job.location,
+      salary: job.salary,
+      education: job.education,
+      experience: job.experience,
+      phone: job.phone,
+      description: job.description,
+      job_type: job.jobType || 'Full-time',
+      employer_name: job.employerName || null,
+      posted_at: job.postedAt
+    });
+
+    if (error) {
+      console.warn('Supabase job sync error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Supabase job sync exception:', err);
+    return false;
+  }
+}
+
+export async function fetchRemoteJobs(config: SupabaseConfig): Promise<JobVacancy[] | null> {
+  const client = getSupabaseClient(config);
+  if (!client) return null;
+
+  try {
+    const { data, error } = await client.from('jobs').select('*').order('posted_at', { ascending: false });
+    if (error || !data) return null;
+
+    return data.map((row: any) => ({
+      id: row.id,
+      title: row.title,
+      company: row.company,
+      location: row.location,
+      salary: row.salary,
+      education: row.education,
+      experience: row.experience,
+      phone: row.phone,
+      description: row.description,
+      jobType: row.job_type,
+      employerName: row.employer_name,
+      postedAt: row.posted_at
+    }));
+  } catch (err) {
+    console.warn('Failed to fetch remote jobs:', err);
+    return null;
+  }
+}
+
+// ----------------- POLICE VERIFICATIONS SUPABASE SYNC -----------------
+
+export async function syncPoliceVerificationToSupabase(
+  verification: PoliceVerification,
+  config: SupabaseConfig
+): Promise<boolean> {
+  const client = getSupabaseClient(config);
+  if (!client) return false;
+
+  try {
+    const { error } = await client.from('police_verifications').upsert({
+      id: verification.id,
+      reference_number: verification.referenceNumber,
+      tenant_name: verification.tenantName,
+      guardian_name: verification.guardianName || null,
+      dob: verification.dob,
+      phone: verification.phone,
+      whatsapp: verification.whatsapp || null,
+      permanent_address: verification.permanentAddress,
+      id_proof_type: verification.idProofType,
+      id_proof_number: verification.idProofNumber,
+      arrival_date: verification.arrivalDate,
+      property_name: verification.propertyName,
+      room_number: verification.roomNumber,
+      property_address: verification.propertyAddress,
+      owner_name: verification.ownerName,
+      owner_phone: verification.ownerPhone,
+      police_station_name: verification.policeStationName,
+      police_station_phone: verification.policeStationPhone || null,
+      police_station_email: verification.policeStationEmail || null,
+      purpose_of_stay: verification.purposeOfStay,
+      work_or_college_name: verification.workOrCollegeName || null,
+      status: verification.status,
+      created_at: verification.createdAt
+    });
+
+    if (error) {
+      console.warn('Supabase police verification sync error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Supabase police verification sync exception:', err);
+    return false;
+  }
+}
+
+export async function fetchRemotePoliceVerifications(
+  config: SupabaseConfig
+): Promise<PoliceVerification[] | null> {
+  const client = getSupabaseClient(config);
+  if (!client) return null;
+
+  try {
+    const { data, error } = await client
+      .from('police_verifications')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error || !data) return null;
+
+    return data.map((row: any) => ({
+      id: row.id,
+      referenceNumber: row.reference_number,
+      tenantName: row.tenant_name,
+      guardianName: row.guardian_name,
+      dob: row.dob,
+      phone: row.phone,
+      whatsapp: row.whatsapp,
+      permanentAddress: row.permanent_address,
+      idProofType: row.id_proof_type,
+      idProofNumber: row.id_proof_number,
+      arrivalDate: row.arrival_date,
+      propertyName: row.property_name,
+      roomNumber: row.room_number,
+      propertyAddress: row.property_address,
+      ownerName: row.owner_name,
+      ownerPhone: row.owner_phone,
+      policeStationName: row.police_station_name,
+      policeStationPhone: row.police_station_phone,
+      policeStationEmail: row.police_station_email,
+      purposeOfStay: row.purpose_of_stay,
+      workOrCollegeName: row.work_or_college_name,
+      status: row.status,
+      createdAt: row.created_at
+    }));
+  } catch (err) {
+    console.warn('Failed to fetch remote police verifications:', err);
+    return null;
+  }
+}
+
 export const SUPABASE_SQL_SCHEMA = `-- NestFinder Supabase Database Setup
 -- Run this SQL in your Supabase Dashboard SQL Editor (https://supabase.com/dashboard/project/_/sql)
 
@@ -276,11 +437,56 @@ CREATE TABLE IF NOT EXISTS public.payments (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- 5. Jobs Portal (Private Job Vacancies)
+CREATE TABLE IF NOT EXISTS public.jobs (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    company TEXT NOT NULL,
+    location TEXT NOT NULL,
+    salary TEXT NOT NULL,
+    education TEXT NOT NULL,
+    experience TEXT NOT NULL,
+    phone TEXT NOT NULL,
+    description TEXT NOT NULL,
+    job_type TEXT DEFAULT 'Full-time',
+    employer_name TEXT,
+    posted_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 6. Police Verifications Table (Automated Tenant Police Verification Records)
+CREATE TABLE IF NOT EXISTS public.police_verifications (
+    id TEXT PRIMARY KEY,
+    reference_number TEXT NOT NULL UNIQUE,
+    tenant_name TEXT NOT NULL,
+    guardian_name TEXT,
+    dob TEXT NOT NULL,
+    phone TEXT NOT NULL,
+    whatsapp TEXT,
+    permanent_address TEXT NOT NULL,
+    id_proof_type TEXT NOT NULL,
+    id_proof_number TEXT NOT NULL,
+    arrival_date TEXT NOT NULL,
+    property_name TEXT NOT NULL,
+    room_number TEXT NOT NULL,
+    property_address TEXT NOT NULL,
+    owner_name TEXT NOT NULL,
+    owner_phone TEXT NOT NULL,
+    police_station_name TEXT NOT NULL,
+    police_station_phone TEXT,
+    police_station_email TEXT,
+    purpose_of_stay TEXT NOT NULL,
+    work_or_college_name TEXT,
+    status TEXT DEFAULT 'Submitted',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
 -- Enable Row Level Security (RLS) and grant public read/write access for easy setup
 ALTER TABLE public.properties ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tenant_passes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.appointments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.jobs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.police_verifications ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Allow public read access to properties" ON public.properties FOR SELECT USING (true);
 CREATE POLICY "Allow public insert to properties" ON public.properties FOR INSERT WITH CHECK (true);
@@ -289,4 +495,12 @@ CREATE POLICY "Allow public update to properties" ON public.properties FOR UPDAT
 CREATE POLICY "Allow public all access to tenant_passes" ON public.tenant_passes FOR ALL USING (true);
 CREATE POLICY "Allow public all access to appointments" ON public.appointments FOR ALL USING (true);
 CREATE POLICY "Allow public all access to payments" ON public.payments FOR ALL USING (true);
+
+CREATE POLICY "Allow public read access to jobs" ON public.jobs FOR SELECT USING (true);
+CREATE POLICY "Allow public insert to jobs" ON public.jobs FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public update to jobs" ON public.jobs FOR UPDATE USING (true);
+
+CREATE POLICY "Allow public read access to police_verifications" ON public.police_verifications FOR SELECT USING (true);
+CREATE POLICY "Allow public insert to police_verifications" ON public.police_verifications FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public update to police_verifications" ON public.police_verifications FOR UPDATE USING (true);
 `;

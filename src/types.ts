@@ -100,3 +100,44 @@ export interface AppReview {
   createdAt: string;
   isVerified: boolean;
 }
+
+export interface JobVacancy {
+  id: string;
+  title: string;
+  company: string;
+  location: string;
+  salary: string;
+  education: string;
+  experience: string;
+  phone: string;
+  description: string;
+  jobType?: 'Full-time' | 'Part-time' | 'Contract' | 'Internship';
+  employerName?: string;
+  postedAt: string;
+}
+
+export interface PoliceVerification {
+  id: string;
+  referenceNumber: string;
+  tenantName: string;
+  guardianName?: string;
+  dob: string;
+  phone: string;
+  whatsapp?: string;
+  permanentAddress: string;
+  idProofType: 'Aadhaar Card' | 'Voter ID' | 'Passport' | 'Driving License';
+  idProofNumber: string;
+  arrivalDate: string;
+  propertyName: string;
+  roomNumber: string;
+  propertyAddress: string;
+  ownerName: string;
+  ownerPhone: string;
+  policeStationName: string;
+  policeStationPhone?: string;
+  policeStationEmail?: string;
+  purposeOfStay: string;
+  workOrCollegeName?: string;
+  status: 'Submitted' | 'Shared with Police' | 'Verified';
+  createdAt: string;
+}

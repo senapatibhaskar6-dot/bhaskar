@@ -11,18 +11,33 @@ import { ExportHtmlModal } from './components/ExportHtmlModal';
 import { AppReviewModal } from './components/AppReviewModal';
 import { AppReviewsSection } from './components/AppReviewsSection';
 import { RazorpayConfigModal } from './components/RazorpayConfigModal';
+import { JobsPortal } from './components/JobsPortal';
+import { PoliceVerificationPortal } from './components/PoliceVerificationPortal';
 import { NestFinderLogo } from './components/NestFinderLogo';
 import { SplashScreen } from './components/SplashScreen';
 import footerBg from './assets/images/footer_architecture_bg_1788145106193.jpg';
 import { INITIAL_PROPERTIES } from './data/initialProperties';
 import { INITIAL_APP_REVIEWS } from './data/initialReviews';
-import { Property, TenantUser, Appointment, SupabaseConfig, AppReview } from './types';
+import { INITIAL_JOBS } from './data/initialJobs';
+import {
+  Property,
+  TenantUser,
+  Appointment,
+  SupabaseConfig,
+  AppReview,
+  JobVacancy,
+  PoliceVerification
+} from './types';
 import {
   syncPropertyToSupabase,
   syncTenantPassToSupabase,
   syncAppointmentToSupabase,
   syncReviewToSupabase,
-  fetchRemoteProperties
+  fetchRemoteProperties,
+  syncJobToSupabase,
+  fetchRemoteJobs,
+  syncPoliceVerificationToSupabase,
+  fetchRemotePoliceVerifications
 } from './services/supabase';
 import {
   ShieldCheck,
@@ -35,7 +50,8 @@ import {
   Building,
   Home,
   MessageSquare,
-  Star
+  Star,
+  Briefcase
 } from 'lucide-react';
 
 export default function App() {
@@ -106,7 +122,7 @@ export default function App() {
   });
 
   // --- Navigation & View States ---
-  const [activeTab, setActiveTab] = useState<'explore' | 'owner'>('explore');
+  const [activeTab, setActiveTab] = useState<'explore' | 'owner' | 'jobs' | 'police'>('explore');
 
   // --- Mobile Launch Splash Screen ---
   const [showSplash, setShowSplash] = useState(() => {
@@ -144,6 +160,40 @@ export default function App() {
     return INITIAL_APP_REVIEWS;
   });
 
+  // --- Jobs Portal State ---
+  const [jobs, setJobs] = useState<JobVacancy[]>(() => {
+    const saved = localStorage.getItem('nestfinder_jobs');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return INITIAL_JOBS;
+  });
+
+  const handleAddJob = (newJob: JobVacancy) => {
+    setJobs((prev) => [newJob, ...prev]);
+  };
+
+  // --- Police Verification Records State ---
+  const [verifications, setVerifications] = useState<PoliceVerification[]>(() => {
+    const saved = localStorage.getItem('nestfinder_police_verifications');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return [];
+  });
+
+  const handleAddVerification = (newVerification: PoliceVerification) => {
+    setVerifications((prev) => [newVerification, ...prev]);
+  };
+
   const handleAddReview = (newReview: AppReview) => {
     setReviews((prev) => [newReview, ...prev]);
     if (supabaseConfig.isConnected) {
@@ -159,6 +209,14 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('nestfinder_app_reviews', JSON.stringify(reviews));
   }, [reviews]);
+
+  useEffect(() => {
+    localStorage.setItem('nestfinder_jobs', JSON.stringify(jobs));
+  }, [jobs]);
+
+  useEffect(() => {
+    localStorage.setItem('nestfinder_police_verifications', JSON.stringify(verifications));
+  }, [verifications]);
 
   useEffect(() => {
     if (tenantPass) {
@@ -180,6 +238,16 @@ export default function App() {
       fetchRemoteProperties(supabaseConfig).then((remoteProps) => {
         if (remoteProps && remoteProps.length > 0) {
           setProperties(remoteProps);
+        }
+      });
+      fetchRemoteJobs(supabaseConfig).then((remoteJobs) => {
+        if (remoteJobs && remoteJobs.length > 0) {
+          setJobs(remoteJobs);
+        }
+      });
+      fetchRemotePoliceVerifications(supabaseConfig).then((remoteVerifications) => {
+        if (remoteVerifications && remoteVerifications.length > 0) {
+          setVerifications(remoteVerifications);
         }
       });
     }
@@ -293,6 +361,12 @@ export default function App() {
     for (const appt of appointments) {
       await syncAppointmentToSupabase(appt, supabaseConfig);
     }
+    for (const j of jobs) {
+      await syncJobToSupabase(j, supabaseConfig);
+    }
+    for (const v of verifications) {
+      await syncPoliceVerificationToSupabase(v, supabaseConfig);
+    }
   };
 
   return (
@@ -324,6 +398,8 @@ export default function App() {
             setBudgetFilter={setBudgetFilter}
             onResetFilters={handleResetFilters}
             onOpenPassModal={() => setIsPassModalOpen(true)}
+            onNavigateToJobs={() => setActiveTab('jobs')}
+            onNavigateToPolice={() => setActiveTab('police')}
             hasPass={Boolean(tenantPass?.hasPaidPass)}
           />
 
@@ -448,6 +524,22 @@ export default function App() {
 
           </main>
         </>
+      ) : activeTab === 'jobs' ? (
+        /* Private Job Vacancies Portal */
+        <JobsPortal
+          jobs={jobs}
+          onAddJob={handleAddJob}
+          supabaseConfig={supabaseConfig}
+        />
+      ) : activeTab === 'police' ? (
+        /* Automated Tenant Police Verification Portal */
+        <PoliceVerificationPortal
+          verifications={verifications}
+          onAddVerification={handleAddVerification}
+          supabaseConfig={supabaseConfig}
+          currentOwnerName={localStorage.getItem('nestfinder_owner_name') || ''}
+          currentOwnerPhone={localStorage.getItem('nestfinder_owner_phone') || ''}
+        />
       ) : (
         /* Owner Listing Portal View */
         <OwnerPortal
@@ -502,6 +594,24 @@ export default function App() {
                 </button>
               </li>
               <li>
+                <button
+                  onClick={() => setActiveTab('jobs')}
+                  className="hover:text-amber-300 text-amber-200 font-bold transition flex items-center gap-1.5 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]"
+                >
+                  <Briefcase className="w-3 h-3 text-amber-400" />
+                  Private Job Vacancies (New)
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => setActiveTab('police')}
+                  className="hover:text-blue-300 text-blue-200 font-bold transition flex items-center gap-1.5 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]"
+                >
+                  <ShieldCheck className="w-3 h-3 text-blue-300" />
+                  Police Verification Form
+                </button>
+              </li>
+              <li>
                 <button onClick={() => setActiveTab('explore')} className="hover:text-emerald-300 transition drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
                   Boys & Girls PGs / Hostels
                 </button>
@@ -509,11 +619,6 @@ export default function App() {
               <li>
                 <button onClick={() => setActiveTab('explore')} className="hover:text-emerald-300 transition drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
                   Rental Flats & Single Rooms
-                </button>
-              </li>
-              <li>
-                <button onClick={() => setActiveTab('explore')} className="hover:text-emerald-300 transition drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
-                  Independent Houses
                 </button>
               </li>
               <li>

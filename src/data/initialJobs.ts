@@ -1,0 +1,88 @@
+import { JobVacancy } from '../types';
+
+export const INITIAL_JOBS: JobVacancy[] = [
+  {
+    id: 'job_1',
+    title: 'Front Desk & Reception Executive',
+    company: 'Apex Coaching Institute',
+    location: 'Guwahati (G.S. Road)',
+    salary: '₹18,000 - ₹24,000 / month',
+    education: 'Graduate (Any Stream) / 12th Pass with good communication',
+    experience: 'Fresher to 1 Year',
+    phone: '9864012345',
+    description: 'Manage student inquiries, phone calls, fee records, and admission desk. Basic knowledge of computer and MS Excel required. Friendly working environment.',
+    jobType: 'Full-time',
+    employerName: 'Apex Institute HR',
+    postedAt: '2026-10-04T10:00:00.000Z'
+  },
+  {
+    id: 'job_2',
+    title: 'Hostel & PG Assistant Warden / Manager',
+    company: 'GreenView PG & Hostels',
+    location: 'Guwahati (Jalukbari)',
+    salary: '₹16,000 - ₹20,000 / month + Free Accommodation & Food',
+    education: '12th Pass or Graduate',
+    experience: 'Fresher or 1+ Year experience in hostel/facility management',
+    phone: '9435098765',
+    description: 'Supervise daily hostel check-ins, mess food coordination, maintenance checks, and discipline. Free single room stay and 3 meals provided at the PG premises.',
+    jobType: 'Full-time',
+    employerName: 'Pranab Das (PG Owner)',
+    postedAt: '2026-10-03T14:30:00.000Z'
+  },
+  {
+    id: 'job_3',
+    title: 'Accountant & Billing Executive',
+    company: 'Brahmaputra Retailers & Distributors',
+    location: 'Guwahati (Fancy Bazar)',
+    salary: '₹22,000 - ₹30,000 / month',
+    education: 'B.Com / Any Graduate with Tally / GST knowledge',
+    experience: '1 to 3 Years',
+    phone: '9706054321',
+    description: 'Handling day-to-day accounts, GST billing, vendor payments, and inventory verification in Tally ERP. Working hours: 10:00 AM to 6:30 PM.',
+    jobType: 'Full-time',
+    employerName: 'Mukesh Sharma',
+    postedAt: '2026-10-02T11:00:00.000Z'
+  },
+  {
+    id: 'job_4',
+    title: 'Cafe Barista & Customer Service Staff',
+    company: 'Roasted Bean Artisan Cafe',
+    location: 'Guwahati (Zoo Road / Chandmari)',
+    salary: '₹14,000 - ₹18,000 / month + Tips & Meal',
+    education: '10th / 12th Pass',
+    experience: 'Fresher welcome (training provided) or 6 months cafe experience',
+    phone: '8876543210',
+    description: 'Brewing espresso, serving cafe snacks, cashiering, and maintaining welcoming cafe atmosphere. Flexible morning & evening shifts available.',
+    jobType: 'Full-time',
+    employerName: 'Cafe Manager',
+    postedAt: '2026-10-01T16:00:00.000Z'
+  },
+  {
+    id: 'job_5',
+    title: 'Digital Marketing & Social Media Coordinator',
+    company: 'UrbanEdge Real Estate Solutions',
+    location: 'Guwahati (Beltola)',
+    salary: '₹20,000 - ₹28,000 / month',
+    education: 'Graduate / Diploma in Marketing / Multimedia',
+    experience: '1+ Year experience in Canva, Reels & Meta Ads',
+    phone: '9101234567',
+    description: 'Create engaging social media posts, short property video reels, manage Instagram and Facebook inquiries, and handle WhatsApp business communications.',
+    jobType: 'Full-time',
+    employerName: 'Sunita Bora',
+    postedAt: '2026-09-30T09:15:00.000Z'
+  },
+  {
+    id: 'job_6',
+    title: 'Field Verification & Delivery Associate',
+    company: 'FastTrack Logistics Hub',
+    location: 'Guwahati (Paltan Bazar & Six Mile)',
+    salary: '₹15,000 - ₹22,000 / month + Fuel Allowance',
+    education: '10th Pass or 12th Pass',
+    experience: 'Fresher (Own two-wheeler & valid driving license required)',
+    phone: '9401239876',
+    description: 'Local document pickup, address verification, parcel deliveries within designated area zones. Fuel allowance and insurance provided.',
+    jobType: 'Full-time',
+    employerName: 'Operations Lead',
+    postedAt: '2026-09-29T12:00:00.000Z'
+  }
+];

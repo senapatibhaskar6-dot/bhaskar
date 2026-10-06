@@ -1,5 +1,13 @@
 import React from 'react';
-import { RotateCcw, ShieldCheck, Sparkles, MapPin, Building2, IndianRupee } from 'lucide-react';
+import {
+  RotateCcw,
+  ShieldCheck,
+  Sparkles,
+  MapPin,
+  Building2,
+  IndianRupee,
+  Briefcase
+} from 'lucide-react';
 import { NestFinderLogo } from './NestFinderLogo';
 import heroBg from '../assets/images/living_room_hero_1788144382451.jpg';
 
@@ -12,6 +20,8 @@ interface HeroSectionProps {
   setBudgetFilter: (budget: number) => void;
   onResetFilters: () => void;
   onOpenPassModal: () => void;
+  onNavigateToJobs?: () => void;
+  onNavigateToPolice?: () => void;
   hasPass: boolean;
 }
 
@@ -24,6 +34,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   setBudgetFilter,
   onResetFilters,
   onOpenPassModal,
+  onNavigateToJobs,
+  onNavigateToPolice,
   hasPass
 }) => {
   return (
@@ -64,17 +76,32 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           Instant direct owner contacts and exact addresses unlocked with the ₹49 Tenant Pass.
         </p>
 
-        {/* Quick Highlights Chips */}
+        {/* Quick Highlights Chips & New Feature Shortcuts */}
         <div className="flex flex-wrap items-center justify-center gap-2 mb-4 text-[11px] sm:text-xs font-bold text-slate-900">
           <span className="px-2.5 py-1 bg-white/85 border border-slate-200 rounded-lg flex items-center gap-1 backdrop-blur-md shadow-sm text-slate-900">
             <Sparkles className="w-3 h-3 text-amber-500" /> ₹49 Pass (Instant Unlock)
           </span>
           <span className="px-2.5 py-1 bg-white/85 border border-slate-200 rounded-lg flex items-center gap-1 backdrop-blur-md shadow-sm text-slate-900">
-            <MapPin className="w-3 h-3 text-rose-500" /> Exact Map & Landmarks
+            <Building2 className="w-3 h-3 text-emerald-600" /> Verified Hostels & PGs
           </span>
-          <span className="px-2.5 py-1 bg-white/85 border border-slate-200 rounded-lg flex items-center gap-1 backdrop-blur-md shadow-sm text-slate-900">
-            <Building2 className="w-3 h-3 text-emerald-600" /> 4 Verified Real Photos Each
-          </span>
+          {onNavigateToJobs && (
+            <button
+              onClick={onNavigateToJobs}
+              className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white border border-indigo-500 rounded-lg flex items-center gap-1 shadow-md transition cursor-pointer"
+            >
+              <Briefcase className="w-3 h-3 text-amber-300" />
+              <span>Jobs Portal (New)</span>
+            </button>
+          )}
+          {onNavigateToPolice && (
+            <button
+              onClick={onNavigateToPolice}
+              className="px-2.5 py-1 bg-blue-700 hover:bg-blue-800 text-white border border-blue-600 rounded-lg flex items-center gap-1 shadow-md transition cursor-pointer"
+            >
+              <ShieldCheck className="w-3 h-3 text-blue-200" />
+              <span>Police Verification</span>
+            </button>
+          )}
         </div>
 
         {/* Search & Filter Bar */}

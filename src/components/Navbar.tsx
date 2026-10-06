@@ -1,11 +1,21 @@
 import React from 'react';
-import { PlusCircle, Key, Database, Download, CheckCircle2, Star } from 'lucide-react';
+import {
+  PlusCircle,
+  Key,
+  Database,
+  Download,
+  CheckCircle2,
+  Star,
+  Briefcase,
+  ShieldCheck,
+  Home
+} from 'lucide-react';
 import { TenantUser } from '../types';
 import { NestFinderLogo } from './NestFinderLogo';
 
 interface NavbarProps {
-  activeTab: 'explore' | 'owner';
-  setActiveTab: (tab: 'explore' | 'owner') => void;
+  activeTab: 'explore' | 'owner' | 'jobs' | 'police';
+  setActiveTab: (tab: 'explore' | 'owner' | 'jobs' | 'police') => void;
   tenantPass: TenantUser | null;
   onOpenPassModal: () => void;
   onOpenSupabaseModal: () => void;
@@ -34,41 +44,74 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="bg-[#222222] text-white text-xs py-2 px-4 text-center font-medium flex items-center justify-center gap-2 border-b border-white/5">
         <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
         <span className="truncate">
-          100% Free Owner Listings • Zero Brokerage • Verified Direct Tenants • Direct Owner Contacts Unlocked!
+          100% Free Owner Listings • Zero Brokerage • Jobs Portal • Automated Tenant Police Verification • Razorpay Ready!
         </span>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-2">
-        {/* Brand Logo with exact uploaded NestFinder design */}
+        {/* Brand Logo */}
         <div
           onClick={() => setActiveTab('explore')}
-          className="cursor-pointer group select-none transition-transform hover:scale-[1.02]"
+          className="cursor-pointer group select-none transition-transform hover:scale-[1.02] shrink-0"
         >
           <NestFinderLogo size="md" variant="horizontal" />
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-1.5 sm:gap-3">
+        <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto py-1 scrollbar-none">
+          {/* Explore Properties Tab */}
           <button
             onClick={() => setActiveTab('explore')}
-            className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition ${
+            className={`px-2.5 sm:px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 shrink-0 ${
               activeTab === 'explore'
                 ? 'bg-[#FF5A5F]/10 text-[#FF5A5F] shadow-xs'
                 : 'text-[#222222] hover:text-[#FF5A5F] hover:bg-slate-100'
             }`}
           >
-            Explore
+            <Home className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="hidden xs:inline">Stays</span>
+          </button>
+
+          {/* Jobs Portal Tab */}
+          <button
+            onClick={() => setActiveTab('jobs')}
+            className={`px-2.5 sm:px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 shrink-0 ${
+              activeTab === 'jobs'
+                ? 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200 shadow-xs'
+                : 'text-slate-700 hover:text-indigo-600 hover:bg-slate-100'
+            }`}
+            title="Private Job Vacancies for Students & Tenants"
+          >
+            <Briefcase className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-600" />
+            <span>Jobs</span>
+            <span className="hidden sm:inline text-[9px] bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded font-black">
+              New
+            </span>
+          </button>
+
+          {/* Police Verification Tab */}
+          <button
+            onClick={() => setActiveTab('police')}
+            className={`px-2.5 sm:px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 shrink-0 ${
+              activeTab === 'police'
+                ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200 shadow-xs'
+                : 'text-slate-700 hover:text-blue-600 hover:bg-slate-100'
+            }`}
+            title="Automated Tenant Police Verification Form"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600" />
+            <span className="hidden sm:inline">Police Verification</span>
+            <span className="sm:hidden">Verify</span>
           </button>
 
           {/* App Reviews Button */}
           <button
             onClick={onOpenReviewModal}
-            className="px-2 sm:px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1 sm:gap-1.5 bg-amber-50/90 hover:bg-amber-100 text-amber-900 border border-amber-200/90 shadow-2xs shrink-0"
+            className="px-2 sm:px-2.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1 bg-amber-50/90 hover:bg-amber-100 text-amber-900 border border-amber-200/90 shadow-2xs shrink-0"
             title="NestFinder App Community Reviews & Rating"
           >
             <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500 shrink-0" />
-            <span className="hidden sm:inline">Reviews</span>
-            <span className="text-[10px] sm:text-xs font-black text-amber-950 bg-amber-200/90 px-1.5 py-0.5 rounded-md">
+            <span className="text-[10px] sm:text-xs font-black text-amber-950">
               4.9★
             </span>
           </button>
@@ -77,7 +120,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {onOpenRazorpayConfig && (
             <button
               onClick={onOpenRazorpayConfig}
-              className="px-2 sm:px-2.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1 sm:gap-1.5 bg-[#0C2340]/5 hover:bg-[#0C2340]/10 text-[#0C2340] border border-blue-200 shadow-2xs shrink-0"
+              className="px-2 sm:px-2.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1 bg-[#0C2340]/5 hover:bg-[#0C2340]/10 text-[#0C2340] border border-blue-200 shadow-2xs shrink-0"
               title="Razorpay Payment Gateway Status & Config"
             >
               <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-[#2B83EA] shrink-0">
@@ -88,42 +131,40 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
+          {/* Owner Listing Button */}
           <button
             onClick={() => setActiveTab('owner')}
-            className={`px-2 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1 sm:gap-1.5 border shadow-xs shrink-0 ${
+            className={`px-2 sm:px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1 border shadow-xs shrink-0 ${
               activeTab === 'owner'
                 ? 'bg-[#FF5A5F] text-white border-[#FF5A5F] shadow-sm shadow-[#FF5A5F]/30 ring-2 ring-[#FF5A5F]/30'
                 : 'bg-rose-50 hover:bg-rose-100/90 text-[#FF5A5F] border-rose-200 hover:border-rose-300'
             }`}
           >
             <PlusCircle className="w-4 h-4 shrink-0" />
-            <span className="hidden sm:inline font-bold">For Owner Listing</span>
-            <span className="hidden xs:inline sm:hidden font-bold">Owner Listing</span>
-            <span className="xs:hidden font-bold">Owner</span>
+            <span className="hidden md:inline font-bold">Owner Listing</span>
+            <span className="md:hidden font-bold">List</span>
           </button>
 
           {/* Tenant Aadhaar Button */}
           <button
             onClick={onOpenPassModal}
-            className={`px-2 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold shadow-xs flex items-center gap-1 sm:gap-1.5 transition shrink-0 ${
+            className={`px-2 sm:px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold shadow-xs flex items-center gap-1 transition shrink-0 ${
               isPassActive
                 ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-600/25'
-                : 'bg-[#FF5A5F] hover:bg-[#E0484D] text-white font-black ring-2 ring-[#FF5A5F]/40 animate-pulse'
+                : 'bg-[#FF5A5F] hover:bg-[#E0484D] text-white font-black ring-2 ring-[#FF5A5F]/40'
             }`}
           >
             {isPassActive ? (
               <>
                 <CheckCircle2 className="w-4 h-4" />
                 <span className="hidden sm:inline">Active Pass ✓</span>
-                <span className="hidden xs:inline sm:hidden">Active ✓</span>
-                <span className="xs:hidden">Active ✓</span>
+                <span className="sm:hidden">Pass ✓</span>
               </>
             ) : (
               <>
                 <Key className="w-4 h-4" />
-                <span className="hidden sm:inline">Tenant & Student Entry Pass (₹49)</span>
-                <span className="hidden xs:inline sm:hidden">Tenant & Student Entry</span>
-                <span className="xs:hidden">Tenant & Student Entry</span>
+                <span className="hidden md:inline">Entry Pass (₹49)</span>
+                <span className="md:hidden">Pass (₹49)</span>
               </>
             )}
           </button>
@@ -132,3 +173,4 @@ export const Navbar: React.FC<NavbarProps> = ({
     </header>
   );
 };
+
