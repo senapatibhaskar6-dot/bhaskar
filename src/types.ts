@@ -45,7 +45,7 @@ export interface TenantUser {
   hasPaidPass: boolean;
   passUtr?: string;
   razorpayPaymentId?: string;
-  paymentMethod?: 'Razorpay' | 'UPI_QR';
+  paymentMethod?: 'Razorpay' | 'UPI_QR' | 'Cashfree';
   passPurchasedAt?: string;
   password?: string;
 }
@@ -63,17 +63,25 @@ export interface Appointment {
   createdAt: string;
 }
 
+export type UserRole = 'customer' | 'owner' | 'job_seeker' | 'admin';
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  email?: string;
+  phone: string;
+  role: UserRole;
+  avatarUrl?: string;
+  hasPaidPass?: boolean;
+  passPurchasedAt?: string;
+  registeredAt: string;
+}
+
 export interface SupabaseConfig {
   url: string;
   anonKey: string;
   isConnected: boolean;
   lastSynced?: string;
-}
-
-export interface RazorpayConfig {
-  keyId: string;
-  isTestMode: boolean;
-  businessName: string;
 }
 
 export interface PaymentRecord {
@@ -83,8 +91,7 @@ export interface PaymentRecord {
   phone: string;
   amount: number;
   utr: string;
-  razorpayPaymentId?: string;
-  paymentMethod?: 'Razorpay' | 'UPI_QR';
+  paymentMethod?: 'UPI_QR' | 'Direct_Pass' | 'Cashfree';
   referenceId: string;
   propertyId?: string;
   timestamp: string;

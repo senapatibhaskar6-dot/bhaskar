@@ -10,15 +10,18 @@ import { SupabaseModal } from './components/SupabaseModal';
 import { ExportHtmlModal } from './components/ExportHtmlModal';
 import { AppReviewModal } from './components/AppReviewModal';
 import { AppReviewsSection } from './components/AppReviewsSection';
-import { RazorpayConfigModal } from './components/RazorpayConfigModal';
 import { JobsPortal } from './components/JobsPortal';
 import { PoliceVerificationPortal } from './components/PoliceVerificationPortal';
+import { AdminDashboard } from './components/AdminDashboard';
+import { AuthModal } from './components/AuthModal';
 import { NestFinderLogo } from './components/NestFinderLogo';
 import { SplashScreen } from './components/SplashScreen';
 import footerBg from './assets/images/footer_architecture_bg_1788145106193.jpg';
 import { INITIAL_PROPERTIES } from './data/initialProperties';
 import { INITIAL_APP_REVIEWS } from './data/initialReviews';
 import { INITIAL_JOBS } from './data/initialJobs';
+import { INITIAL_USERS } from './data/initialUsers';
+import { INITIAL_PAYMENTS } from './data/initialPayments';
 import {
   Property,
   TenantUser,
@@ -26,7 +29,10 @@ import {
   SupabaseConfig,
   AppReview,
   JobVacancy,
-  PoliceVerification
+  PoliceVerification,
+  UserProfile,
+  UserRole,
+  PaymentRecord
 } from './types';
 import {
   syncPropertyToSupabase,
@@ -121,8 +127,45 @@ export default function App() {
     };
   });
 
-  // --- Navigation & View States ---
-  const [activeTab, setActiveTab] = useState<'explore' | 'owner' | 'jobs' | 'police'>('explore');
+  // --- Navigation & View States (RBAC Dynamic Routing) ---
+  const [activeTab, setActiveTab] = useState<'explore' | 'owner' | 'jobs' | 'police' | 'admin'>('explore');
+
+  // --- Authenticated User & Role Management ---
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
+    const saved = localStorage.getItem('nestfinder_current_user');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return INITIAL_USERS[0]; // Default demo logged-in user: Admin or Customer
+  });
+
+  const [users, setUsers] = useState<UserProfile[]>(() => {
+    const saved = localStorage.getItem('nestfinder_users_registry');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return INITIAL_USERS;
+  });
+
+  const [payments, setPayments] = useState<PaymentRecord[]>(() => {
+    const saved = localStorage.getItem('nestfinder_payment_records');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return INITIAL_PAYMENTS;
+  });
 
   // --- Mobile Launch Splash Screen ---
   const [showSplash, setShowSplash] = useState(() => {
@@ -143,7 +186,7 @@ export default function App() {
   const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
-  const [isRazorpayConfigOpen, setIsRazorpayConfigOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [galleryProperty, setGalleryProperty] = useState<Property | null>(null);
   const [appointmentProperty, setAppointmentProperty] = useState<Property | null>(null);
 
@@ -380,6 +423,74 @@ export default function App() {
     );
   };
 
+  // --- RBAC Dynamic Routing & Role Handlers ---
+  const handleLoginSuccess = (user: UserProfile) => {
+    setCurrentUser(user);
+    localStorage.setItem('nestfinder_current_user', JSON.stringify(user));
+
+    // Upsert into users registry
+    setUsers((prev) => {
+      const filtered = prev.filter((u) => u.id !== user.id && u.phone !== user.phone);
+      return [user, ...filtered];
+    });
+
+    // Dynamic Routing based on Role
+    if (user.role === 'owner') {
+      setActiveTab('owner');
+    } else if (user.role === 'job_seeker') {
+      setActiveTab('jobs');
+    } else if (user.role === 'admin') {
+      setActiveTab('admin');
+    } else {
+      setActiveTab('explore');
+    }
+  };
+
+  const handleSwitchRole = (role: UserRole) => {
+    if (currentUser) {
+      const updated = { ...currentUser, role };
+      setCurrentUser(updated);
+      localStorage.setItem('nestfinder_current_user', JSON.stringify(updated));
+    }
+    // Dynamic Route
+    if (role === 'owner') {
+      setActiveTab('owner');
+    } else if (role === 'job_seeker') {
+      setActiveTab('jobs');
+    } else if (role === 'admin') {
+      setActiveTab('admin');
+    } else {
+      setActiveTab('explore');
+    }
+  };
+
+  const handleDeleteUser = (userId: string) => {
+    setUsers((prev) => prev.filter((u) => u.id !== userId));
+  };
+
+  const handleDeleteProperty = (propertyId: string) => {
+    setProperties((prev) => prev.filter((p) => p.id !== propertyId));
+  };
+
+  const handleDeleteJob = (jobId: string) => {
+    setJobs((prev) => prev.filter((j) => j.id !== jobId));
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem('nestfinder_current_user');
+    setActiveTab('explore');
+  };
+
+  // Sync users & payments to localStorage
+  useEffect(() => {
+    localStorage.setItem('nestfinder_users_registry', JSON.stringify(users));
+  }, [users]);
+
+  useEffect(() => {
+    localStorage.setItem('nestfinder_payment_records', JSON.stringify(payments));
+  }, [payments]);
+
   const handleSyncAll = async () => {
     if (!supabaseConfig.isConnected) return;
     for (const prop of properties) {
@@ -411,8 +522,10 @@ export default function App() {
         onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
         onOpenExportModal={() => setIsExportModalOpen(true)}
         onOpenReviewModal={() => setIsReviewModalOpen(true)}
-        onOpenRazorpayConfig={() => setIsRazorpayConfigOpen(true)}
         reviewCount={reviews.length}
+        currentUserRole={currentUser?.role || null}
+        onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        onLogout={handleLogout}
       />
 
       {/* Main View Body */}
@@ -434,7 +547,7 @@ export default function App() {
           />
 
           {/* Main Listings Container */}
-          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 flex-1 w-full">
+          <main id="listings-feed" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 flex-1 w-full scroll-mt-24">
             
             {/* Pass Status Callout Banner */}
             {tenantPass?.hasPaidPass ? (
@@ -573,6 +686,23 @@ export default function App() {
           currentOwnerName={localStorage.getItem('nestfinder_owner_name') || ''}
           currentOwnerPhone={localStorage.getItem('nestfinder_owner_phone') || ''}
         />
+      ) : activeTab === 'admin' ? (
+        /* Exclusive Admin Dashboard View */
+        <AdminDashboard
+          currentUserRole={currentUser?.role || null}
+          properties={properties}
+          jobs={jobs}
+          verifications={verifications}
+          payments={payments}
+          users={users}
+          onDeleteUser={handleDeleteUser}
+          onDeleteProperty={handleDeleteProperty}
+          onDeleteJob={handleDeleteJob}
+          onTogglePropertyStatus={handleTogglePropertyStatus}
+          onToggleJobStatus={handleToggleJobStatus}
+          onSwitchRole={handleSwitchRole}
+          onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        />
       ) : (
         /* Owner Listing Portal View */
         <OwnerPortal
@@ -700,28 +830,15 @@ export default function App() {
                 <ShieldCheck className="w-4 h-4 text-[#00E676]" />
                 <span>100% Secure Verified Platform</span>
               </div>
-              <button
-                onClick={() => setIsRazorpayConfigOpen(true)}
-                className="flex items-center gap-1.5 text-xs text-blue-200 hover:text-white font-bold bg-[#0C2340]/60 hover:bg-[#0C2340]/80 px-3 py-1.5 rounded-lg border border-blue-400/30 w-fit backdrop-blur-sm shadow-md transition cursor-pointer"
-                title="View Razorpay Gateway Status & Key Settings"
-              >
-                <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-[#2B83EA]">
-                  <path d="M14 2L2 14h8l-2 8 12-12h-8l2-8z" />
-                </svg>
-                <span>Razorpay Gateway (Active)</span>
-              </button>
             </div>
           </div>
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 pt-4 border-t border-white/20 text-xs text-center text-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <span className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">&copy; 2026 NestFinder • Direct Housing Platform. All Rights Reserved.</span>
-          <button
-            onClick={() => setIsRazorpayConfigOpen(true)}
-            className="text-[11px] text-blue-200 hover:text-white underline font-semibold transition"
-          >
-            Razorpay Merchant Settings
-          </button>
+          <span className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">&copy; 2026 NestFinder • Direct Housing & Jobs Platform. All Rights Reserved.</span>
+          <span className="text-[11px] text-slate-300 font-medium">
+            Zero Commission • Direct Owner & Employer Connect
+          </span>
         </div>
       </footer>
 
@@ -731,12 +848,6 @@ export default function App() {
         onClose={() => setIsPassModalOpen(false)}
         tenantPass={tenantPass}
         onPassPurchased={handlePassPurchased}
-      />
-
-      <RazorpayConfigModal
-        isOpen={isRazorpayConfigOpen}
-        onClose={() => setIsRazorpayConfigOpen(false)}
-        onTestPayment={() => setIsPassModalOpen(true)}
       />
 
       <AppointmentModal
@@ -770,6 +881,13 @@ export default function App() {
         onClose={() => setIsReviewModalOpen(false)}
         reviews={reviews}
         onAddReview={handleAddReview}
+      />
+
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onLoginSuccess={handleLoginSuccess}
+        initialRole={currentUser?.role || 'customer'}
       />
 
       {/* Mobile Launch Splash Screen */}

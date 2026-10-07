@@ -76,6 +76,26 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           Instant direct owner contacts and exact addresses unlocked with the ₹49 Tenant Pass.
         </p>
 
+        {/* Customer Choice: Find PG vs Find Jobs */}
+        <div className="flex items-center justify-center gap-2.5 sm:gap-3 mb-4 flex-wrap">
+          <a
+            href="#listings-feed"
+            className="py-2.5 sm:py-3 px-5 sm:px-6 rounded-2xl bg-[#FF5A5F] hover:bg-[#E0484D] text-white text-xs sm:text-sm font-black shadow-lg shadow-[#FF5A5F]/30 transition flex items-center gap-2 cursor-pointer"
+          >
+            <Building2 className="w-4 h-4" />
+            <span>Find PG / Rental Flat</span>
+          </a>
+          {onNavigateToJobs && (
+            <button
+              onClick={onNavigateToJobs}
+              className="py-2.5 sm:py-3 px-5 sm:px-6 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-black shadow-lg shadow-indigo-600/30 transition flex items-center gap-2 cursor-pointer"
+            >
+              <Briefcase className="w-4 h-4 text-amber-300" />
+              <span>Find Jobs (🟢 Available)</span>
+            </button>
+          )}
+        </div>
+
         {/* Quick Highlights Chips & New Feature Shortcuts */}
         <div className="flex flex-wrap items-center justify-center gap-2 mb-4 text-[11px] sm:text-xs font-bold text-slate-900">
           <span className="px-2.5 py-1 bg-white/85 border border-slate-200 rounded-lg flex items-center gap-1 backdrop-blur-md shadow-sm text-slate-900">

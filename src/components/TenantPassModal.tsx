@@ -16,7 +16,6 @@ import {
   ArrowLeft,
   CreditCard,
   Smartphone,
-  Settings,
   Zap,
   Building2,
   Wallet
@@ -24,9 +23,7 @@ import {
 import confetti from 'canvas-confetti';
 import { TenantUser } from '../types';
 import { UpiPaymentQrCard } from './UpiPaymentQrCard';
-import { RazorpayModal } from './RazorpayModal';
-import { RazorpayConfigModal } from './RazorpayConfigModal';
-import { openRazorpayStandardCheckout, getRazorpayConfig } from '../services/razorpay';
+import { createCashfreeOrder, launchCashfreeCheckout } from '../services/cashfree';
 
 interface TenantPassModalProps {
   isOpen: boolean;
@@ -55,15 +52,11 @@ export const TenantPassModal: React.FC<TenantPassModalProps> = ({
   const [loginPhone, setLoginPhone] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
 
-  // Payment method & Razorpay States
-  const [activePaymentTab, setActivePaymentTab] = useState<'razorpay' | 'manual_qr'>('razorpay');
-  const [isOpeningRazorpay, setIsOpeningRazorpay] = useState(false);
-  const [isRazorpayModalOpen, setIsRazorpayModalOpen] = useState(false);
-  const [isRazorpayConfigOpen, setIsRazorpayConfigOpen] = useState(false);
-
   // ₹49 Payment parameters
+  const [paymentOption, setPaymentOption] = useState<'cashfree' | 'upi_qr'>('cashfree');
   const [utr, setUtr] = useState('');
   const [isPaymentSubmitting, setIsPaymentSubmitting] = useState(false);
+  const [isCashfreeLoading, setIsCashfreeLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   // Tenant Forgot Password States
@@ -234,10 +227,9 @@ export const TenantPassModal: React.FC<TenantPassModalProps> = ({
   };
 
   // Common Pass Activation Handler
-  const handlePassActivationSuccess = (paymentId: string, method: 'Razorpay' | 'UPI_QR') => {
+  const handlePassActivationSuccess = (paymentId: string, method: 'UPI_QR' | 'Cashfree' = 'Cashfree') => {
     setIsPaymentSubmitting(false);
-    setIsOpeningRazorpay(false);
-    setIsRazorpayModalOpen(false);
+    setIsCashfreeLoading(false);
 
     const newPass: TenantUser = {
       id: tenantPass?.id || `tenant_${Date.now()}`,
@@ -247,7 +239,6 @@ export const TenantPassModal: React.FC<TenantPassModalProps> = ({
       preferredCity: preferredCity.trim() || 'All Cities',
       hasPaidPass: true,
       passUtr: paymentId,
-      razorpayPaymentId: method === 'Razorpay' ? paymentId : undefined,
       paymentMethod: method,
       passPurchasedAt: new Date().toISOString(),
       password: password.trim()
@@ -269,7 +260,6 @@ export const TenantPassModal: React.FC<TenantPassModalProps> = ({
         phone: whatsapp.trim(),
         amount: 49,
         utr: paymentId,
-        razorpayPaymentId: method === 'Razorpay' ? paymentId : undefined,
         paymentMethod: method,
         referenceId: paymentId,
         timestamp: new Date().toISOString(),
@@ -294,36 +284,42 @@ export const TenantPassModal: React.FC<TenantPassModalProps> = ({
     }
   };
 
-  // Launch Razorpay standard checkout flow
-  const handlePayWithRazorpay = async () => {
+  // Launch Cashfree SDK Payment Checkout
+  const handleCashfreePayment = async () => {
     setErrorMsg('');
-    setIsOpeningRazorpay(true);
+    setIsCashfreeLoading(true);
 
-    const opened = await openRazorpayStandardCheckout({
-      amount: 49,
-      name: 'NestFinder',
-      description: `30-Day Tenant Pass - ${name}`,
-      prefill: {
-        name: name.trim(),
-        contact: whatsapp.trim()
-      },
-      onSuccess: (res) => {
-        setIsOpeningRazorpay(false);
-        handlePassActivationSuccess(res.razorpay_payment_id, 'Razorpay');
-      },
-      onFailure: (err) => {
-        console.warn('Razorpay SDK payment issue:', err);
-        setIsOpeningRazorpay(false);
-        setIsRazorpayModalOpen(true);
-      },
-      onDismiss: () => {
-        setIsOpeningRazorpay(false);
+    try {
+      const orderData = await createCashfreeOrder({
+        amount: 49,
+        customerName: name.trim() || 'Tenant',
+        customerPhone: whatsapp.replace(/\D/g, '') || '9876543210',
+        orderNote: 'NestFinder 30-Day Tenant Pass Unlock (₹49)'
+      });
+
+      if (!orderData.success || !orderData.paymentSessionId) {
+        throw new Error(orderData.message || 'Unable to initialize Cashfree payment session');
       }
-    });
 
-    if (!opened) {
-      setIsOpeningRazorpay(false);
-      setIsRazorpayModalOpen(true);
+      await launchCashfreeCheckout({
+        paymentSessionId: orderData.paymentSessionId,
+        orderId: orderData.orderId || `nf_cf_${Date.now()}`,
+        environment: orderData.environment || 'sandbox',
+        onSuccess: (paymentResult: any) => {
+          const refId = paymentResult?.referenceId || paymentResult?.orderId || `CF_PASS_${Date.now()}`;
+          handlePassActivationSuccess(refId, 'Cashfree');
+        },
+        onFailure: (err: any) => {
+          setIsCashfreeLoading(false);
+          setErrorMsg(err?.message || 'Payment was not completed. Please try again.');
+        },
+        onDismiss: () => {
+          setIsCashfreeLoading(false);
+        }
+      });
+    } catch (err: any) {
+      setIsCashfreeLoading(false);
+      setErrorMsg(err?.message || 'Failed to start Cashfree checkout. Try UPI QR code below.');
     }
   };
 
@@ -637,11 +633,11 @@ export const TenantPassModal: React.FC<TenantPassModalProps> = ({
                   </button>
                 </form>
               ) : (
-                /* STEP 2: ₹49 PAYMENT GATEWAY (RAZORPAY & UPI QR) */
+                /* STEP 2: ₹49 PAYMENT GATEWAY (CASHFREE & UPI QR) */
                 <div className="space-y-4 animate-in fade-in duration-150">
-                  <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3.5 text-emerald-800 text-xs font-semibold flex items-start justify-between gap-2.5">
-                    <div className="flex items-start gap-2.5">
-                      <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3.5 text-emerald-800 text-xs font-semibold flex items-center justify-between gap-2.5">
+                    <div className="flex items-center gap-2.5">
+                      <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
                       <div>
                         <p className="font-extrabold text-emerald-950">Almost done, {name}!</p>
                         <p className="text-[11px] text-emerald-800 mt-0.5">
@@ -649,91 +645,86 @@ export const TenantPassModal: React.FC<TenantPassModalProps> = ({
                         </p>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setIsRazorpayConfigOpen(true)}
-                      className="text-slate-500 hover:text-slate-800 p-1.5 rounded-lg hover:bg-emerald-100 transition shrink-0"
-                      title="Razorpay Gateway Settings"
-                    >
-                      <Settings className="w-4 h-4" />
-                    </button>
+                    <span className="px-2.5 py-1 bg-emerald-600 text-white rounded-lg text-xs font-black shrink-0">
+                      ₹49 Only
+                    </span>
                   </div>
 
-                  {/* Payment Method Switch Tabs */}
-                  <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-xl">
+                  {/* Payment Method Selector Segmented Control */}
+                  <div className="bg-slate-100 p-1 rounded-2xl grid grid-cols-2 gap-1 border border-slate-200">
                     <button
                       type="button"
-                      onClick={() => setActivePaymentTab('razorpay')}
-                      className={`py-2 px-2 text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition ${
-                        activePaymentTab === 'razorpay'
-                          ? 'bg-[#0C2340] text-white shadow-xs'
+                      onClick={() => setPaymentOption('cashfree')}
+                      className={`py-2 px-3 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition ${
+                        paymentOption === 'cashfree'
+                          ? 'bg-white text-indigo-700 shadow-sm border border-slate-200/80'
                           : 'text-slate-600 hover:text-slate-900'
                       }`}
                     >
-                      <Zap className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Razorpay (Instant)</span>
+                      <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                      <span>Cashfree Checkout</span>
+                      <span className="text-[9px] px-1.5 py-0.2 bg-emerald-100 text-emerald-700 rounded-md font-black">
+                        AUTO
+                      </span>
                     </button>
-
                     <button
                       type="button"
-                      onClick={() => setActivePaymentTab('manual_qr')}
-                      className={`py-2 px-2 text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition ${
-                        activePaymentTab === 'manual_qr'
-                          ? 'bg-white text-slate-900 shadow-xs'
+                      onClick={() => setPaymentOption('upi_qr')}
+                      className={`py-2 px-3 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition ${
+                        paymentOption === 'upi_qr'
+                          ? 'bg-white text-emerald-700 shadow-sm border border-slate-200/80'
                           : 'text-slate-600 hover:text-slate-900'
                       }`}
                     >
-                      <Smartphone className="w-3.5 h-3.5 text-[#00A699]" />
-                      <span>Direct UPI QR</span>
+                      <Smartphone className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Scan UPI QR</span>
                     </button>
                   </div>
 
-                  {activePaymentTab === 'razorpay' ? (
-                    /* RAZORPAY GATEWAY CHECKOUT CARD */
-                    <div className="space-y-4">
-                      <div className="bg-gradient-to-br from-[#0C2340] via-[#112E56] to-[#0A192F] text-white p-5 rounded-2xl border border-blue-900 shadow-xl relative overflow-hidden">
-                        
-                        {/* Decorative background glow */}
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-[#2B83EA]/20 rounded-full blur-2xl pointer-events-none" />
-
-                        <div className="flex items-center justify-between relative z-10 mb-3">
-                          <div className="flex items-center gap-2">
-                            <div className="flex items-center gap-1 bg-[#2B83EA] px-2.5 py-1 rounded-lg text-white font-black text-xs tracking-wider">
-                              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-white">
-                                <path d="M14 2L2 14h8l-2 8 12-12h-8l2-8z" />
-                              </svg>
-                              <span>Razorpay</span>
-                            </div>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-blue-200 bg-white/10 px-2 py-0.5 rounded-md">
-                              Auto-Verified
-                            </span>
+                  {paymentOption === 'cashfree' ? (
+                    /* CASHFREE PAYMENT GATEWAY OPTION */
+                    <div className="space-y-4 bg-gradient-to-b from-indigo-50/60 to-white p-4 sm:p-5 rounded-2xl border border-indigo-100">
+                      <div className="flex items-center justify-between pb-2 border-b border-indigo-100/70">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-black text-xs shadow-xs">
+                            CF
                           </div>
-
-                          <span className="text-xl font-black text-white">₹49.00</span>
+                          <div>
+                            <h4 className="text-xs font-extrabold text-slate-900">Cashfree Payments</h4>
+                            <p className="text-[10px] text-slate-500">Official Checkout SDK v3</p>
+                          </div>
                         </div>
+                        <span className="text-[10px] font-bold text-indigo-700 bg-indigo-100/70 px-2 py-0.5 rounded-md">
+                          Instant 0-Wait Unlock
+                        </span>
+                      </div>
 
-                        <p className="text-xs text-blue-100 font-medium mb-3 relative z-10">
-                          Instant pass unlock with real-time verification. No need to copy or paste 12-digit UTR numbers!
-                        </p>
+                      <div className="grid grid-cols-3 gap-2 py-1">
+                        <div className="bg-white p-2.5 rounded-xl border border-slate-200/80 text-center shadow-2xs">
+                          <Smartphone className="w-4 h-4 mx-auto text-indigo-600 mb-1" />
+                          <p className="text-[10px] font-bold text-slate-700 leading-tight">UPI Apps</p>
+                          <p className="text-[8px] text-slate-400">GPay, PhonePe, Paytm</p>
+                        </div>
+                        <div className="bg-white p-2.5 rounded-xl border border-slate-200/80 text-center shadow-2xs">
+                          <CreditCard className="w-4 h-4 mx-auto text-emerald-600 mb-1" />
+                          <p className="text-[10px] font-bold text-slate-700 leading-tight">Cards</p>
+                          <p className="text-[8px] text-slate-400">Visa, RuPay, MC</p>
+                        </div>
+                        <div className="bg-white p-2.5 rounded-xl border border-slate-200/80 text-center shadow-2xs">
+                          <Building2 className="w-4 h-4 mx-auto text-amber-600 mb-1" />
+                          <p className="text-[10px] font-bold text-slate-700 leading-tight">NetBanking</p>
+                          <p className="text-[8px] text-slate-400">50+ Banks</p>
+                        </div>
+                      </div>
 
-                        {/* Supported Payment Channels */}
-                        <div className="grid grid-cols-4 gap-2 text-center text-[10px] font-bold text-slate-200 relative z-10 pt-2 border-t border-white/10">
-                          <div className="bg-white/10 p-1.5 rounded-lg flex flex-col items-center gap-1">
-                            <Smartphone className="w-3.5 h-3.5 text-blue-300" />
-                            <span>UPI (GPay/Pe)</span>
-                          </div>
-                          <div className="bg-white/10 p-1.5 rounded-lg flex flex-col items-center gap-1">
-                            <CreditCard className="w-3.5 h-3.5 text-emerald-300" />
-                            <span>Cards</span>
-                          </div>
-                          <div className="bg-white/10 p-1.5 rounded-lg flex flex-col items-center gap-1">
-                            <Building2 className="w-3.5 h-3.5 text-amber-300" />
-                            <span>NetBanking</span>
-                          </div>
-                          <div className="bg-white/10 p-1.5 rounded-lg flex flex-col items-center gap-1">
-                            <Wallet className="w-3.5 h-3.5 text-rose-300" />
-                            <span>Wallets</span>
-                          </div>
+                      <div className="bg-white p-3 rounded-xl border border-indigo-100 text-[11px] text-slate-600 space-y-1">
+                        <div className="flex items-center justify-between text-xs font-bold text-slate-800">
+                          <span>NestFinder 30-Day Pass:</span>
+                          <span className="text-indigo-600">₹49.00</span>
+                        </div>
+                        <div className="flex items-center justify-between text-[10px] text-slate-400">
+                          <span>Convenience Fee:</span>
+                          <span className="text-emerald-600 font-bold">FREE (₹0)</span>
                         </div>
                       </div>
 
@@ -744,39 +735,33 @@ export const TenantPassModal: React.FC<TenantPassModalProps> = ({
                         </div>
                       )}
 
-                      {/* Primary Razorpay Action Button */}
                       <button
                         type="button"
-                        onClick={handlePayWithRazorpay}
-                        disabled={isOpeningRazorpay}
-                        className="w-full py-4 px-6 rounded-2xl font-black text-sm sm:text-base bg-[#2B83EA] hover:bg-[#1E6BCE] text-white shadow-xl shadow-blue-500/25 transition flex items-center justify-center gap-2 group cursor-pointer"
+                        onClick={handleCashfreePayment}
+                        disabled={isCashfreeLoading}
+                        className="w-full py-3.5 px-6 rounded-2xl font-black text-sm bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white shadow-lg shadow-indigo-600/25 transition flex items-center justify-center gap-2"
                       >
-                        {isOpeningRazorpay ? (
+                        {isCashfreeLoading ? (
                           <>
-                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            <span>Connecting Razorpay Gateway...</span>
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            <span>Opening Cashfree Checkout...</span>
                           </>
                         ) : (
                           <>
-                            <Lock className="w-4 h-4 text-blue-100" />
-                            <span>Pay ₹49 with Razorpay</span>
-                            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                            <Zap className="w-4 h-4 fill-amber-300 text-amber-300" />
+                            <span>Pay ₹49 via Cashfree Checkout</span>
+                            <ArrowRight className="w-4 h-4" />
                           </>
                         )}
                       </button>
 
-                      {/* Instant Demo Quick Unlock for Testing */}
-                      <button
-                        type="button"
-                        onClick={() => handlePassActivationSuccess(`pay_demo_${Date.now()}`, 'Razorpay')}
-                        className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition flex items-center justify-center gap-1.5"
-                      >
-                        <Zap className="w-3.5 h-3.5 text-amber-500" />
-                        <span>⚡ Tester 1-Click Simulated Payment</span>
-                      </button>
+                      <div className="flex items-center justify-center gap-1.5 text-[10px] font-semibold text-slate-400 pt-1">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                        <span>Secured by Cashfree Payments • 256-Bit Encrypted</span>
+                      </div>
                     </div>
                   ) : (
-                    /* MANUAL UPI QR PAYMENT FALLBACK */
+                    /* DIRECT UPI QR PAYMENT FORM */
                     <form onSubmit={handlePaymentSubmit} className="space-y-4">
                       <div className="flex flex-col items-center justify-center p-1">
                         <UpiPaymentQrCard amount={49} note={`${name} NestFinder Pass`} showCopyButton={true} />
@@ -1040,30 +1025,6 @@ export const TenantPassModal: React.FC<TenantPassModalProps> = ({
             </div>
           </div>
         )}
-
-        {/* Razorpay Interactive Checkout Modal */}
-        <RazorpayModal
-          isOpen={isRazorpayModalOpen}
-          amount={49}
-          customerName={name || 'NestFinder Member'}
-          customerPhone={whatsapp || '9876543210'}
-          description="30-Day Tenant Pass Unlock"
-          onClose={() => setIsRazorpayModalOpen(false)}
-          onSuccess={(paymentId) => {
-            setIsRazorpayModalOpen(false);
-            handlePassActivationSuccess(paymentId, 'Razorpay');
-          }}
-        />
-
-        {/* Razorpay Configuration Settings Modal */}
-        <RazorpayConfigModal
-          isOpen={isRazorpayConfigOpen}
-          onClose={() => setIsRazorpayConfigOpen(false)}
-          onTestPayment={() => {
-            setIsRazorpayConfigOpen(false);
-            setIsRazorpayModalOpen(true);
-          }}
-        />
 
       </div>
     </div>

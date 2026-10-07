@@ -486,13 +486,32 @@ CREATE TABLE IF NOT EXISTS public.police_verifications (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Enable Row Level Security (RLS) and grant public read/write access for easy setup
+-- 7. User Profiles with Role-Based Access Control (RBAC)
+DO $$ BEGIN
+    CREATE TYPE user_role AS ENUM ('customer', 'owner', 'job_seeker', 'admin');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+CREATE TABLE IF NOT EXISTS public.profiles (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    phone TEXT NOT NULL,
+    email TEXT,
+    role user_role NOT NULL DEFAULT 'customer',
+    has_paid_pass BOOLEAN DEFAULT false,
+    pass_purchased_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Enable Row Level Security (RLS)
 ALTER TABLE public.properties ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tenant_passes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.appointments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.jobs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.police_verifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Allow public read access to properties" ON public.properties FOR SELECT USING (true);
 CREATE POLICY "Allow public insert to properties" ON public.properties FOR INSERT WITH CHECK (true);
@@ -509,4 +528,7 @@ CREATE POLICY "Allow public update to jobs" ON public.jobs FOR UPDATE USING (tru
 CREATE POLICY "Allow public read access to police_verifications" ON public.police_verifications FOR SELECT USING (true);
 CREATE POLICY "Allow public insert to police_verifications" ON public.police_verifications FOR INSERT WITH CHECK (true);
 CREATE POLICY "Allow public update to police_verifications" ON public.police_verifications FOR UPDATE USING (true);
+
+CREATE POLICY "Allow public read access to profiles" ON public.profiles FOR SELECT USING (true);
+CREATE POLICY "Allow public insert/update to profiles" ON public.profiles FOR ALL USING (true);
 `;

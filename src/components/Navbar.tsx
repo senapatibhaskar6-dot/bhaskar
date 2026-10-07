@@ -14,15 +14,17 @@ import { TenantUser } from '../types';
 import { NestFinderLogo } from './NestFinderLogo';
 
 interface NavbarProps {
-  activeTab: 'explore' | 'owner' | 'jobs' | 'police';
-  setActiveTab: (tab: 'explore' | 'owner' | 'jobs' | 'police') => void;
+  activeTab: 'explore' | 'owner' | 'jobs' | 'police' | 'admin';
+  setActiveTab: (tab: 'explore' | 'owner' | 'jobs' | 'police' | 'admin') => void;
   tenantPass: TenantUser | null;
   onOpenPassModal: () => void;
   onOpenSupabaseModal: () => void;
   onOpenExportModal: () => void;
   onOpenReviewModal: () => void;
-  onOpenRazorpayConfig?: () => void;
   reviewCount?: number;
+  currentUserRole?: 'customer' | 'owner' | 'job_seeker' | 'admin' | null;
+  onOpenAuthModal?: () => void;
+  onLogout?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -33,8 +35,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenSupabaseModal,
   onOpenExportModal,
   onOpenReviewModal,
-  onOpenRazorpayConfig,
-  reviewCount = 5
+  reviewCount = 5,
+  currentUserRole,
+  onOpenAuthModal,
+  onLogout
 }) => {
   const isPassActive = tenantPass?.hasPaidPass;
 
@@ -44,7 +48,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="bg-[#222222] text-white text-xs py-2 px-4 text-center font-medium flex items-center justify-center gap-2 border-b border-white/5">
         <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
         <span className="truncate">
-          100% Free Owner Listings • Zero Brokerage • Jobs Portal • Automated Tenant Police Verification • Razorpay Ready!
+          100% Free Owner Listings • Zero Brokerage • Jobs Portal • Automated Tenant Police Verification • Instant ₹49 Pass
         </span>
       </div>
 
@@ -117,20 +121,22 @@ export const Navbar: React.FC<NavbarProps> = ({
             </span>
           </button>
 
-          {/* Razorpay Gateway Button */}
-          {onOpenRazorpayConfig && (
-            <button
-              onClick={onOpenRazorpayConfig}
-              className="px-2 sm:px-2.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1 bg-[#0C2340]/5 hover:bg-[#0C2340]/10 text-[#0C2340] border border-blue-200 shadow-2xs shrink-0"
-              title="Razorpay Payment Gateway Status & Config"
-            >
-              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-[#2B83EA] shrink-0">
-                <path d="M14 2L2 14h8l-2 8 12-12h-8l2-8z" />
-              </svg>
-              <span className="hidden md:inline font-black text-[#0C2340]">Razorpay</span>
+          {/* Admin Dashboard Tab (Exclusively for Admin Role or switch) */}
+          <button
+            onClick={() => setActiveTab('admin')}
+            className={`px-2 sm:px-2.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1 shrink-0 ${
+              activeTab === 'admin'
+                ? 'bg-purple-700 text-white shadow-xs ring-2 ring-purple-400/40'
+                : 'bg-purple-50 text-purple-800 hover:bg-purple-100 border border-purple-200'
+            }`}
+            title="Admin Management & Metrics Dashboard"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
+            <span className="hidden md:inline">Admin</span>
+            {currentUserRole === 'admin' && (
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-            </button>
-          )}
+            )}
+          </button>
 
           {/* Owner Listing Button */}
           <button
