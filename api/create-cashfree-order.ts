@@ -75,7 +75,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       },
       order_meta: {
         return_url: returnUrl || `https://nestfinder.in/?order_id=${orderId}`,
-        payment_methods: 'upi,cc,dc,nb,wallet'
+        payment_methods: 'upi,cc,dc,nb'
       },
       order_note: orderNote
     };
