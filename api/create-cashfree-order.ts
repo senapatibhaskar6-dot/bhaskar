@@ -1,7 +1,6 @@
-// Vercel Serverless Function & Node.js API Handler: Create Cashfree Order
-// Endpoint: POST /api/create-cashfree-order
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-function sendJson(res: any, statusCode: number, data: any) {
+function sendJson(res: VercelResponse, statusCode: number, data: any) {
   if (typeof res.status === 'function') {
     return res.status(statusCode).json(data);
   }
@@ -10,7 +9,7 @@ function sendJson(res: any, statusCode: number, data: any) {
   return res.end(JSON.stringify(data));
 }
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -46,22 +45,19 @@ export default async function handler(req: any, res: any) {
     const secretKey = process.env.CASHFREE_SECRET_KEY;
     const environment = process.env.CASHFREE_ENVIRONMENT || 'sandbox';
 
-    // Generate unique order ID
+    if (!appId || !secretKey) {
+      console.warn('CASHFREE_APP_ID or CASHFREE_SECRET_KEY not set in live environment.');
+      return sendJson(res, 503, {
+        success: false,
+        message: 'Cashfree payment gateway credentials are not yet configured.'
+      });
+    }
+
     const cleanPhone = String(customerPhone).replace(/\D/g, '') || '9876543210';
     const orderId = `nf_ord_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
     const customerId = `cust_${cleanPhone}_${Date.now().toString().slice(-4)}`;
     const email = customerEmail || `${cleanPhone}@nestfinder.in`;
 
-    // Live environment check: Cashfree credentials must be present
-    if (!appId || !secretKey) {
-      console.warn('CASHFREE_APP_ID or CASHFREE_SECRET_KEY not set in live environment.');
-      return sendJson(res, 503, {
-        success: false,
-        message: 'Cashfree payment gateway credentials are not yet configured. Please pay via UPI QR code or contact NestFinder support.'
-      });
-    }
-
-    // Determine Cashfree Endpoint URL
     const baseUrl =
       environment.toLowerCase() === 'production'
         ? 'https://api.cashfree.com/pg'
@@ -84,6 +80,13 @@ export default async function handler(req: any, res: any) {
       order_note: orderNote
     };
 
+    // --- Logging before fetch request ---
+    console.log('--- CASHFREE ORDER API DEBUG ---');
+    console.log('Environment:', environment);
+    console.log('Target URL:', `${baseUrl}/orders`);
+    console.log('App ID Length:', appId ? appId.length : 0);
+    console.log('Secret Key Length:', secretKey ? secretKey.length : 0);
+
     const response = await fetch(`${baseUrl}/orders`, {
       method: 'POST',
       headers: {
@@ -96,6 +99,10 @@ export default async function handler(req: any, res: any) {
     });
 
     const data = await response.json();
+    
+    // --- Logging response status and data ---
+    console.log('Cashfree Response Status:', response.status);
+    console.log('Cashfree Response Data:', data);
 
     if (!response.ok) {
       console.error('Cashfree API Order Creation Error:', data);
