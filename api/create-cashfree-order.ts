@@ -1,6 +1,7 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+// Vercel Serverless Function & Node.js API Handler: Create Cashfree Order
+// Endpoint: POST /api/create-cashfree-order
 
-function sendJson(res: VercelResponse, statusCode: number, data: any) {
+function sendJson(res: any, statusCode: number, data: any) {
   if (typeof res.status === 'function') {
     return res.status(statusCode).json(data);
   }
@@ -9,7 +10,7 @@ function sendJson(res: VercelResponse, statusCode: number, data: any) {
   return res.end(JSON.stringify(data));
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: any, res: any) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');

@@ -36,11 +36,17 @@ import {
 } from './types';
 import {
   syncPropertyToSupabase,
+  deleteRemoteProperty,
+  getDeletedPropertyIds,
+  markPropertyAsDeleted,
   syncTenantPassToSupabase,
   syncAppointmentToSupabase,
   syncReviewToSupabase,
   fetchRemoteProperties,
   syncJobToSupabase,
+  deleteRemoteJob,
+  getDeletedJobIds,
+  markJobAsDeleted,
   fetchRemoteJobs,
   syncPoliceVerificationToSupabase,
   fetchRemotePoliceVerifications
@@ -63,15 +69,17 @@ import {
 export default function App() {
   // --- Persistent State ---
   const [properties, setProperties] = useState<Property[]>(() => {
+    const deletedIds = getDeletedPropertyIds();
     const saved = localStorage.getItem('nestfinder_properties');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed: Property[] = JSON.parse(saved);
+        return parsed.filter((p) => !deletedIds.has(p.id));
       } catch (e) {
         console.error(e);
       }
     }
-    return INITIAL_PROPERTIES;
+    return INITIAL_PROPERTIES.filter((p) => !deletedIds.has(p.id));
   });
 
   const [tenantPass, setTenantPass] = useState<TenantUser | null>(() => {
@@ -205,15 +213,17 @@ export default function App() {
 
   // --- Jobs Portal State ---
   const [jobs, setJobs] = useState<JobVacancy[]>(() => {
+    const deletedIds = getDeletedJobIds();
     const saved = localStorage.getItem('nestfinder_jobs');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed: JobVacancy[] = JSON.parse(saved);
+        return parsed.filter((j) => !deletedIds.has(j.id));
       } catch (e) {
         console.error(e);
       }
     }
-    return INITIAL_JOBS;
+    return INITIAL_JOBS.filter((j) => !deletedIds.has(j.id));
   });
 
   const handleAddJob = (newJob: JobVacancy) => {
@@ -295,12 +305,18 @@ export default function App() {
     if (supabaseConfig.isConnected && supabaseConfig.url && supabaseConfig.anonKey) {
       fetchRemoteProperties(supabaseConfig).then((remoteProps) => {
         if (remoteProps && remoteProps.length > 0) {
-          setProperties(remoteProps);
+          const deletedIds = getDeletedPropertyIds();
+          const cleanProps = remoteProps.filter((p) => !deletedIds.has(p.id));
+          setProperties(cleanProps);
+          localStorage.setItem('nestfinder_properties', JSON.stringify(cleanProps));
         }
       });
       fetchRemoteJobs(supabaseConfig).then((remoteJobs) => {
         if (remoteJobs && remoteJobs.length > 0) {
-          setJobs(remoteJobs);
+          const deletedIds = getDeletedJobIds();
+          const cleanJobs = remoteJobs.filter((j) => !deletedIds.has(j.id));
+          setJobs(cleanJobs);
+          localStorage.setItem('nestfinder_jobs', JSON.stringify(cleanJobs));
         }
       });
       fetchRemotePoliceVerifications(supabaseConfig).then((remoteVerifications) => {
@@ -468,12 +484,48 @@ export default function App() {
     setUsers((prev) => prev.filter((u) => u.id !== userId));
   };
 
-  const handleDeleteProperty = (propertyId: string) => {
-    setProperties((prev) => prev.filter((p) => p.id !== propertyId));
+  const handleDeleteProperty = async (propertyId: string) => {
+    // 1. Mark permanently blacklisted in persistent registry
+    markPropertyAsDeleted(propertyId);
+
+    // 2. Remove immediately from local state and write to localStorage
+    setProperties((prev) => {
+      const updated = prev.filter((p) => p.id !== propertyId);
+      localStorage.setItem('nestfinder_properties', JSON.stringify(updated));
+      return updated;
+    });
+
+    // 3. Remove any related appointments for this property
+    setAppointments((prev) => {
+      const updated = prev.filter((a) => a.propertyId !== propertyId);
+      localStorage.setItem('nestfinder_appointments', JSON.stringify(updated));
+      return updated;
+    });
+
+    // 4. Permanently delete the document record from remote Supabase database
+    if (supabaseConfig.isConnected) {
+      try {
+        await deleteRemoteProperty(propertyId, supabaseConfig);
+      } catch (err) {
+        console.warn('Failed to delete property from remote Supabase database:', err);
+      }
+    }
   };
 
-  const handleDeleteJob = (jobId: string) => {
-    setJobs((prev) => prev.filter((j) => j.id !== jobId));
+  const handleDeleteJob = async (jobId: string) => {
+    markJobAsDeleted(jobId);
+    setJobs((prev) => {
+      const updated = prev.filter((j) => j.id !== jobId);
+      localStorage.setItem('nestfinder_jobs', JSON.stringify(updated));
+      return updated;
+    });
+    if (supabaseConfig.isConnected) {
+      try {
+        await deleteRemoteJob(jobId, supabaseConfig);
+      } catch (err) {
+        console.warn('Failed to delete job from remote Supabase database:', err);
+      }
+    }
   };
 
   const handleLogout = () => {

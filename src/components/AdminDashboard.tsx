@@ -219,7 +219,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     value={enteredPin}
                     onChange={(e) => setEnteredPin(e.target.value)}
                     disabled={lockoutTime > 0}
-                    placeholder="Enter Master PIN (Default: 8826)"
+                    placeholder="Enter Master PIN / Password"
                     className="w-full px-4 py-3.5 bg-slate-950 border border-purple-800/80 rounded-2xl text-center text-lg font-mono font-black text-white focus:outline-none focus:ring-2 focus:ring-purple-500 tracking-widest placeholder:text-slate-600 placeholder:text-sm placeholder:tracking-normal placeholder:font-sans"
                     autoFocus
                   />
@@ -276,8 +276,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </button>
 
               <div className="flex items-center justify-between pt-2">
-                <span className="text-[11px] text-slate-400">
-                  Default PIN: <strong className="text-purple-300 font-mono">8826</strong>
+                <span className="text-[11px] text-slate-400 flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-purple-400" />
+                  <span>Protected Admin Panel</span>
                 </span>
                 {onNavigateToExplore && (
                   <button
@@ -712,12 +713,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     <td className="py-3 px-4 text-right">
                       <button
                         onClick={() => {
-                          if (window.confirm(`Delete listing "${p.title}"?`)) {
+                          if (window.confirm(`Are you sure you want to permanently delete listing "${p.title}"? This document will be completely deleted from the database and will not reappear after page refresh.`)) {
                             onDeleteProperty(p.id);
-                            showToast(`Deleted property "${p.title}"`);
+                            showToast(`Permanently deleted document "${p.title}"`);
                           }
                         }}
                         className="px-2.5 py-1 text-xs font-bold text-rose-600 hover:bg-rose-600 hover:text-white border border-rose-200 rounded-lg transition inline-flex items-center gap-1"
+                        title="Delete listing and database document permanently"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                         <span>Delete</span>
@@ -784,12 +786,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     <td className="py-3 px-4 text-right">
                       <button
                         onClick={() => {
-                          if (window.confirm(`Delete vacancy "${j.title}"?`)) {
+                          if (window.confirm(`Are you sure you want to permanently delete vacancy "${j.title}"? This document will be completely deleted from the database and will not reappear after page refresh.`)) {
                             onDeleteJob(j.id);
-                            showToast(`Deleted job "${j.title}"`);
+                            showToast(`Permanently deleted job "${j.title}"`);
                           }
                         }}
                         className="px-2.5 py-1 text-xs font-bold text-rose-600 hover:bg-rose-600 hover:text-white border border-rose-200 rounded-lg transition inline-flex items-center gap-1"
+                        title="Delete vacancy document permanently"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                         <span>Delete</span>
@@ -929,7 +932,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   type="password"
                   value={currentPinInput}
                   onChange={(e) => setCurrentPinInput(e.target.value)}
-                  placeholder="Enter current PIN (Default: 8826)"
+                  placeholder="Enter current Master PIN"
                   className="w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl font-mono text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
               </div>

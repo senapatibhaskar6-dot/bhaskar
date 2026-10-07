@@ -470,13 +470,10 @@ export const TenantPassModal: React.FC<TenantPassModalProps> = ({
               </button>
 
               <div className="pt-2 text-center flex flex-col gap-1.5 border-t border-slate-100 mt-4">
-                <span className="text-[10px] text-slate-400 font-bold">
-                  Testing? Use Phone <span className="text-slate-600 font-mono font-black">9876543210</span> & Password <span className="text-slate-600 font-mono font-black">admin</span>
-                </span>
                 <button
                   type="button"
                   onClick={() => { setShowLogin(false); setErrorMsg(''); }}
-                  className="text-xs text-[#00A699] font-black hover:underline mt-2"
+                  className="text-xs text-[#00A699] font-black hover:underline"
                 >
                   Create New Pass Registration (₹49)
                 </button>

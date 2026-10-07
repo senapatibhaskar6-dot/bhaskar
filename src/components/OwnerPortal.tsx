@@ -681,12 +681,6 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
                   <Unlock className="w-3.5 h-3.5" />
                   <span>Secure Owner Login</span>
                 </button>
-
-                <div className="pt-2 text-center">
-                  <span className="text-[10px] text-slate-400 font-bold">
-                    Testing? Use Phone <span className="text-slate-600 font-mono font-black">9876543210</span> & Password <span className="text-slate-600 font-mono font-black">admin</span>
-                  </span>
-                </div>
               </form>
             ) : (
               /* Compact Register Form */

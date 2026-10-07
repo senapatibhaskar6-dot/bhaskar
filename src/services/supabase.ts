@@ -221,6 +221,95 @@ export async function fetchRemoteProperties(config: SupabaseConfig): Promise<Pro
   }
 }
 
+// Permanently delete property from Supabase database
+export async function deleteRemoteProperty(propertyId: string, config: SupabaseConfig): Promise<boolean> {
+  const client = getSupabaseClient(config);
+  if (!client) return false;
+
+  try {
+    // 1. Delete associated appointments for this property first if any
+    try {
+      await client.from('appointments').delete().eq('property_id', propertyId);
+    } catch (_) {
+      // Continue even if table or FK doesn't exist
+    }
+
+    // 2. Delete the property record
+    const { error } = await client.from('properties').delete().eq('id', propertyId);
+    if (error) {
+      console.warn('Supabase property delete error:', error.message);
+      // Direct REST API fallback
+      try {
+        const res = await fetch(`${config.url.replace(/\/$/, '')}/rest/v1/properties?id=eq.${encodeURIComponent(propertyId)}`, {
+          method: 'DELETE',
+          headers: {
+            apikey: config.anonKey,
+            Authorization: `Bearer ${config.anonKey}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        return res.ok;
+      } catch (err) {
+        return false;
+      }
+    }
+    return true;
+  } catch (err) {
+    console.warn('Supabase property delete exception:', err);
+    return false;
+  }
+}
+
+// ----------------- DELETION REGISTRY PERSISTENCE HELPERS -----------------
+const DELETED_PROPERTY_IDS_KEY = 'nestfinder_deleted_property_ids';
+const DELETED_JOB_IDS_KEY = 'nestfinder_deleted_job_ids';
+
+export function getDeletedPropertyIds(): Set<string> {
+  try {
+    const raw = localStorage.getItem(DELETED_PROPERTY_IDS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return new Set(parsed);
+    }
+  } catch (e) {
+    console.error('Error reading deleted property IDs:', e);
+  }
+  return new Set();
+}
+
+export function markPropertyAsDeleted(propertyId: string): void {
+  try {
+    const set = getDeletedPropertyIds();
+    set.add(propertyId);
+    localStorage.setItem(DELETED_PROPERTY_IDS_KEY, JSON.stringify(Array.from(set)));
+  } catch (e) {
+    console.error('Error saving deleted property ID:', e);
+  }
+}
+
+export function getDeletedJobIds(): Set<string> {
+  try {
+    const raw = localStorage.getItem(DELETED_JOB_IDS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return new Set(parsed);
+    }
+  } catch (e) {
+    console.error('Error reading deleted job IDs:', e);
+  }
+  return new Set();
+}
+
+export function markJobAsDeleted(jobId: string): void {
+  try {
+    const set = getDeletedJobIds();
+    set.add(jobId);
+    localStorage.setItem(DELETED_JOB_IDS_KEY, JSON.stringify(Array.from(set)));
+  } catch (e) {
+    console.error('Error saving deleted job ID:', e);
+  }
+}
+
 // ----------------- JOBS VACANCY SUPABASE SYNC -----------------
 
 export async function syncJobToSupabase(job: JobVacancy, config: SupabaseConfig): Promise<boolean> {
@@ -281,6 +370,35 @@ export async function fetchRemoteJobs(config: SupabaseConfig): Promise<JobVacanc
   } catch (err) {
     console.warn('Failed to fetch remote jobs:', err);
     return null;
+  }
+}
+
+export async function deleteRemoteJob(jobId: string, config: SupabaseConfig): Promise<boolean> {
+  const client = getSupabaseClient(config);
+  if (!client) return false;
+
+  try {
+    const { error } = await client.from('jobs').delete().eq('id', jobId);
+    if (error) {
+      console.warn('Supabase job delete error:', error.message);
+      try {
+        const res = await fetch(`${config.url.replace(/\/$/, '')}/rest/v1/jobs?id=eq.${encodeURIComponent(jobId)}`, {
+          method: 'DELETE',
+          headers: {
+            apikey: config.anonKey,
+            Authorization: `Bearer ${config.anonKey}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        return res.ok;
+      } catch (err) {
+        return false;
+      }
+    }
+    return true;
+  } catch (err) {
+    console.warn('Supabase job delete exception:', err);
+    return false;
   }
 }
 
