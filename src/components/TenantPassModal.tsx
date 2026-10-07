@@ -79,32 +79,6 @@ export const TenantPassModal: React.FC<TenantPassModalProps> = ({
       return;
     }
 
-    // Default universal tester credential
-    const currentDemoPass = localStorage.getItem('nestfinder_demo_tenant_password') || 'admin';
-    if (loginPhone === '9876543210' && loginPassword === currentDemoPass) {
-      const demoPass: TenantUser = {
-        id: 'tenant_demo',
-        name: 'Bhaskar Senapati (Guest)',
-        whatsapp: '9876543210',
-        tenantType: 'Student',
-        preferredCity: 'Guwahati',
-        hasPaidPass: true,
-        passUtr: 'DEMO-87654321',
-        passPurchasedAt: new Date().toISOString(),
-        password: currentDemoPass
-      };
-      onPassPurchased(demoPass);
-      try {
-        confetti({
-          particleCount: 120,
-          spread: 70,
-          origin: { y: 0.5 }
-        });
-      } catch (err) {}
-      onClose();
-      return;
-    }
-
     // Load from local storage registry
     const savedTenants = JSON.parse(localStorage.getItem('nestfinder_tenants_registry') || '[]');
     const matched = savedTenants.find(
@@ -323,21 +297,28 @@ export const TenantPassModal: React.FC<TenantPassModalProps> = ({
     }
   };
 
-  // Step 2: ₹49 Manual Payment Submit with UTR
+  // Step 2: ₹49 Manual Payment Submit with UTR (Strict Live Validation)
   const handlePaymentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
 
-    const cleanUtr = utr.replace(/\s/g, '');
-    if (!cleanUtr || cleanUtr.length < 8) {
-      setErrorMsg('Please enter your valid 12-digit UPI UTR / Reference ID.');
+    const cleanUtr = utr.trim().replace(/\D/g, '');
+    if (!cleanUtr || cleanUtr.length !== 12) {
+      setErrorMsg('Please enter a valid 12-digit numeric UPI UTR / Transaction Reference ID.');
+      return;
+    }
+
+    // Block known dummy / test UTRs in live production
+    const blockedTestUtrs = ['423189098712', '123456789012', '000000000000', '111111111111', '999999999999'];
+    if (blockedTestUtrs.includes(cleanUtr) || /^(\d)\1{11}$/.test(cleanUtr)) {
+      setErrorMsg('Test UTR detected. Please enter your real 12-digit transaction UTR from your UPI payment receipt.');
       return;
     }
 
     setIsPaymentSubmitting(true);
     setTimeout(() => {
       handlePassActivationSuccess(cleanUtr, 'UPI_QR');
-    }, 1000);
+    }, 1200);
   };
 
   if (!isOpen) return null;
@@ -781,16 +762,12 @@ export const TenantPassModal: React.FC<TenantPassModalProps> = ({
                           className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#FF5A5F] focus:outline-none text-center font-mono font-black text-base text-[#222222] tracking-wider"
                         />
                         <div className="flex items-center justify-between">
-                          <p className="text-[10px] text-slate-400">
-                            Found in your GPay / PhonePe / Paytm receipt.
+                          <p className="text-[10px] text-slate-500 font-medium">
+                            Found in your GPay / PhonePe / Paytm receipt (12 Digits).
                           </p>
-                          <button
-                            type="button"
-                            onClick={() => setUtr('423189098712')}
-                            className="text-[10px] font-black text-[#00A699] hover:underline bg-emerald-50 px-2 py-0.5 rounded-md"
-                          >
-                            ⚡ Tester Auto-fill UTR
-                          </button>
+                          <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60">
+                            🔒 Live Verification
+                          </span>
                         </div>
                       </div>
 

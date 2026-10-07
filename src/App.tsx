@@ -702,6 +702,7 @@ export default function App() {
           onToggleJobStatus={handleToggleJobStatus}
           onSwitchRole={handleSwitchRole}
           onOpenAuthModal={() => setIsAuthModalOpen(true)}
+          onNavigateToExplore={() => setActiveTab('explore')}
         />
       ) : (
         /* Owner Listing Portal View */

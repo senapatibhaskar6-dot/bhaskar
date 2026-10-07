@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ShieldCheck,
   Users,
@@ -14,10 +14,16 @@ import {
   Building,
   KeyRound,
   Eye,
+  EyeOff,
   RefreshCw,
   Code,
   ShieldAlert,
-  ArrowRight
+  ArrowRight,
+  Lock,
+  Unlock,
+  X,
+  Check,
+  Key
 } from 'lucide-react';
 import {
   Property,
@@ -42,6 +48,7 @@ interface AdminDashboardProps {
   onToggleJobStatus: (jobId: string, isBooked: boolean) => void;
   onSwitchRole: (role: UserRole) => void;
   onOpenAuthModal: () => void;
+  onNavigateToExplore?: () => void;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
@@ -57,48 +64,232 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onTogglePropertyStatus,
   onToggleJobStatus,
   onSwitchRole,
-  onOpenAuthModal
+  onOpenAuthModal,
+  onNavigateToExplore
 }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'properties' | 'jobs' | 'payments' | 'schema'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<'ALL' | UserRole>('ALL');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Admin Security Lock System State
+  const [isAdminUnlocked, setIsAdminUnlocked] = useState<boolean>(() => {
+    return sessionStorage.getItem('nestfinder_admin_session_unlocked') === 'true';
+  });
+  const [enteredPin, setEnteredPin] = useState('');
+  const [showPin, setShowPin] = useState(false);
+  const [lockError, setLockError] = useState('');
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lockoutTime, setLockoutTime] = useState(0);
+
+  // Change PIN modal state
+  const [isChangePinOpen, setIsChangePinOpen] = useState(false);
+  const [currentPinInput, setCurrentPinInput] = useState('');
+  const [newPinInput, setNewPinInput] = useState('');
+  const [confirmPinInput, setConfirmPinInput] = useState('');
+  const [changePinError, setChangePinError] = useState('');
+  const [changePinSuccess, setChangePinSuccess] = useState('');
+
+  // Lockout countdown timer
+  useEffect(() => {
+    if (lockoutTime <= 0) return;
+    const timer = setInterval(() => {
+      setLockoutTime((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setFailedAttempts(0);
+          setLockError('');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [lockoutTime]);
+
+  const getMasterPin = () => {
+    return localStorage.getItem('nestfinder_admin_master_pin') || '8826';
+  };
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // RBAC Access Control Guard: If not admin, block view
-  if (currentUserRole !== 'admin') {
-    return (
-      <div className="max-w-4xl mx-auto px-4 py-16 text-center">
-        <div className="bg-white rounded-3xl border border-red-200 p-8 sm:p-12 shadow-xl space-y-4">
-          <div className="w-16 h-16 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center mx-auto">
-            <ShieldAlert className="w-8 h-8" />
-          </div>
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-            Restricted Admin Access (403 Forbidden)
-          </h2>
-          <p className="text-sm text-slate-600 max-w-md mx-auto">
-            The Admin Dashboard is strictly reserved for users with the <span className="font-bold text-purple-700">admin</span> role. 
-            Your current active role is: <span className="font-black uppercase px-2 py-0.5 rounded bg-slate-100">{currentUserRole || 'Unauthenticated'}</span>.
-          </p>
+  const handleUnlockAdmin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (lockoutTime > 0) return;
 
-          <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <button
-              onClick={() => onSwitchRole('admin')}
-              className="px-5 py-2.5 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-black shadow-md transition flex items-center gap-2"
-            >
-              <KeyRound className="w-4 h-4" />
-              <span>Switch to Admin Role (Demo Preview)</span>
-            </button>
-            <button
-              onClick={onOpenAuthModal}
-              className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition"
-            >
-              Sign In with Admin Credentials
-            </button>
+    setLockError('');
+    const actualPin = getMasterPin();
+
+    if (enteredPin.trim() === actualPin) {
+      setIsAdminUnlocked(true);
+      sessionStorage.setItem('nestfinder_admin_session_unlocked', 'true');
+      setEnteredPin('');
+      setFailedAttempts(0);
+      onSwitchRole('admin');
+      showToast('Master Admin Dashboard Unlocked');
+    } else {
+      const nextCount = failedAttempts + 1;
+      setFailedAttempts(nextCount);
+      if (nextCount >= 3) {
+        setLockoutTime(30);
+        setLockError('Security Lockout: 3 failed attempts. Locked for 30 seconds.');
+      } else {
+        setLockError(`Incorrect Master PIN / Password. ${3 - nextCount} attempt(s) remaining.`);
+      }
+    }
+  };
+
+  const handleLockPanel = () => {
+    setIsAdminUnlocked(false);
+    sessionStorage.removeItem('nestfinder_admin_session_unlocked');
+    setEnteredPin('');
+    showToast('Admin Panel Locked');
+  };
+
+  const handleChangePinSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setChangePinError('');
+    setChangePinSuccess('');
+
+    const actualPin = getMasterPin();
+    if (currentPinInput.trim() !== actualPin) {
+      setChangePinError('Current Master PIN is incorrect.');
+      return;
+    }
+
+    if (!newPinInput.trim() || newPinInput.trim().length < 4) {
+      setChangePinError('New Master PIN must be at least 4 digits or characters.');
+      return;
+    }
+
+    if (newPinInput.trim() !== confirmPinInput.trim()) {
+      setChangePinError('New PIN and Confirm PIN do not match.');
+      return;
+    }
+
+    localStorage.setItem('nestfinder_admin_master_pin', newPinInput.trim());
+    setChangePinSuccess('Master Admin PIN successfully updated!');
+    setTimeout(() => {
+      setIsChangePinOpen(false);
+      setCurrentPinInput('');
+      setNewPinInput('');
+      setConfirmPinInput('');
+      setChangePinSuccess('');
+      showToast('Master Admin PIN updated');
+    }, 1200);
+  };
+
+  // ADMIN SECURITY LOCK SCREEN: Displayed whenever panel is locked
+  if (!isAdminUnlocked) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-12 sm:py-20 animate-in fade-in zoom-in-95 duration-200">
+        <div className="bg-slate-900 border border-purple-900/60 rounded-3xl p-6 sm:p-10 shadow-2xl text-white relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-purple-600/15 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="relative z-10 text-center space-y-4">
+            <div className="w-16 h-16 rounded-2xl bg-purple-600/20 border border-purple-500/40 text-purple-400 flex items-center justify-center mx-auto shadow-lg shadow-purple-500/10">
+              <Lock className="w-8 h-8 text-purple-300" />
+            </div>
+
+            <div>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/30 mb-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" />
+                Locked Administrative Zone
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+                Admin Panel Security Lock
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-sm mx-auto">
+                Protected area for platform financials, listings audit & user controls. Enter Master Admin PIN to unlock.
+              </p>
+            </div>
+
+            <form onSubmit={handleUnlockAdmin} className="space-y-4 pt-2">
+              <div className="space-y-1.5 text-left">
+                <label className="block text-xs font-black text-slate-300 uppercase tracking-wide">
+                  Master Admin PIN / Password
+                </label>
+                <div className="relative">
+                  <input
+                    required
+                    type={showPin ? 'text' : 'password'}
+                    value={enteredPin}
+                    onChange={(e) => setEnteredPin(e.target.value)}
+                    disabled={lockoutTime > 0}
+                    placeholder="Enter Master PIN (Default: 8826)"
+                    className="w-full px-4 py-3.5 bg-slate-950 border border-purple-800/80 rounded-2xl text-center text-lg font-mono font-black text-white focus:outline-none focus:ring-2 focus:ring-purple-500 tracking-widest placeholder:text-slate-600 placeholder:text-sm placeholder:tracking-normal placeholder:font-sans"
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPin(!showPin)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1"
+                    title={showPin ? 'Hide PIN' : 'Show PIN'}
+                  >
+                    {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Quick Keypad for PIN entry */}
+              <div className="grid grid-cols-3 gap-2 max-w-xs mx-auto py-1">
+                {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '⌫'].map((k) => (
+                  <button
+                    type="button"
+                    key={k}
+                    disabled={lockoutTime > 0}
+                    onClick={() => {
+                      if (k === 'C') setEnteredPin('');
+                      else if (k === '⌫') setEnteredPin((p) => p.slice(0, -1));
+                      else setEnteredPin((p) => p + k);
+                    }}
+                    className="py-2.5 bg-slate-800/80 hover:bg-purple-900/40 active:scale-95 text-slate-200 hover:text-white rounded-xl font-mono font-bold text-sm border border-slate-700/60 transition"
+                  >
+                    {k}
+                  </button>
+                ))}
+              </div>
+
+              {lockError && (
+                <div className="p-3 rounded-xl bg-rose-950/80 border border-rose-800 text-rose-300 text-xs font-semibold flex items-center justify-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{lockError}</span>
+                </div>
+              )}
+
+              {lockoutTime > 0 && (
+                <div className="p-2.5 rounded-xl bg-amber-950/80 border border-amber-800 text-amber-300 text-xs font-bold text-center">
+                  ⏳ Security Lockout: Try again in {lockoutTime}s
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={lockoutTime > 0 || !enteredPin.trim()}
+                className="w-full py-3.5 px-6 rounded-2xl font-black text-sm bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white shadow-lg shadow-purple-600/30 transition flex items-center justify-center gap-2"
+              >
+                <Unlock className="w-4 h-4" />
+                <span>Unlock Master Admin Panel</span>
+              </button>
+
+              <div className="flex items-center justify-between pt-2">
+                <span className="text-[11px] text-slate-400">
+                  Default PIN: <strong className="text-purple-300 font-mono">8826</strong>
+                </span>
+                {onNavigateToExplore && (
+                  <button
+                    type="button"
+                    onClick={onNavigateToExplore}
+                    className="text-[11px] font-bold text-slate-400 hover:text-white hover:underline"
+                  >
+                    ← Exit to Explore Listings
+                  </button>
+                )}
+              </div>
+            </form>
           </div>
         </div>
       </div>
@@ -168,29 +359,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </p>
           </div>
 
-          {/* Quick Role Switcher for Demo & Testing */}
-          <div className="bg-purple-900/40 p-3 rounded-2xl border border-purple-400/20 flex flex-col gap-1.5 shrink-0">
-            <span className="text-[10px] uppercase font-bold text-purple-200 tracking-wider">
-              Test Role-Based Dynamic Routing:
-            </span>
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {(['customer', 'owner', 'job_seeker', 'admin'] as UserRole[]).map((r) => (
-                <button
-                  key={r}
-                  onClick={() => {
-                    onSwitchRole(r);
-                    showToast(`Role switched to "${r}"`);
-                  }}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-black uppercase transition ${
-                    currentUserRole === r
-                      ? 'bg-purple-500 text-white shadow-xs'
-                      : 'bg-white/10 text-slate-300 hover:bg-white/20'
-                  }`}
-                >
-                  {r}
-                </button>
-              ))}
+          {/* Admin Panel Security Action Controls */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0">
+            <div className="flex items-center gap-2 bg-emerald-500/20 text-emerald-300 px-3 py-1.5 rounded-xl text-xs font-bold border border-emerald-400/30">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Session Authenticated</span>
             </div>
+            <button
+              type="button"
+              onClick={() => setIsChangePinOpen(true)}
+              className="px-3.5 py-2 rounded-xl text-xs font-black bg-white/10 hover:bg-white/20 text-white border border-white/20 transition flex items-center justify-center gap-1.5 shadow-sm"
+              title="Change Master Admin PIN"
+            >
+              <KeyRound className="w-3.5 h-3.5 text-purple-300" />
+              <span>Change PIN</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleLockPanel}
+              className="px-4 py-2 rounded-xl text-xs font-black bg-rose-600 hover:bg-rose-700 active:scale-95 text-white shadow-lg shadow-rose-600/30 transition flex items-center justify-center gap-1.5"
+              title="Lock this panel immediately"
+            >
+              <Lock className="w-3.5 h-3.5" />
+              <span>Lock Panel</span>
+            </button>
           </div>
         </div>
       </div>
@@ -698,6 +890,108 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Change Master Admin PIN Modal */}
+      {isChangePinOpen && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-purple-800/80 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl text-white relative animate-in fade-in zoom-in-95">
+            <button
+              onClick={() => {
+                setIsChangePinOpen(false);
+                setChangePinError('');
+                setChangePinSuccess('');
+              }}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-10 h-10 rounded-2xl bg-purple-600/20 border border-purple-500/40 flex items-center justify-center text-purple-300">
+                <KeyRound className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-white">Change Master Admin PIN</h3>
+                <p className="text-xs text-slate-400">Update your secret lock screen passcode</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleChangePinSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  Current Master PIN *
+                </label>
+                <input
+                  required
+                  type="password"
+                  value={currentPinInput}
+                  onChange={(e) => setCurrentPinInput(e.target.value)}
+                  placeholder="Enter current PIN (Default: 8826)"
+                  className="w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl font-mono text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  New Master PIN (at least 4 chars) *
+                </label>
+                <input
+                  required
+                  type="password"
+                  value={newPinInput}
+                  onChange={(e) => setNewPinInput(e.target.value)}
+                  placeholder="Enter new secret PIN / Password"
+                  className="w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl font-mono text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  Confirm New Master PIN *
+                </label>
+                <input
+                  required
+                  type="password"
+                  value={confirmPinInput}
+                  onChange={(e) => setConfirmPinInput(e.target.value)}
+                  placeholder="Re-enter new PIN"
+                  className="w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl font-mono text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              {changePinError && (
+                <div className="p-3 rounded-xl bg-rose-950/80 border border-rose-800 text-rose-300 text-xs font-semibold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{changePinError}</span>
+                </div>
+              )}
+
+              {changePinSuccess && (
+                <div className="p-3 rounded-xl bg-emerald-950/80 border border-emerald-800 text-emerald-300 text-xs font-semibold flex items-center gap-2">
+                  <Check className="w-4 h-4 shrink-0" />
+                  <span>{changePinSuccess}</span>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsChangePinOpen(false)}
+                  className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="py-2.5 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-black shadow-md transition"
+                >
+                  Save New PIN
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

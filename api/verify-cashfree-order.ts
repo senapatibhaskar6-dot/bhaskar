@@ -42,14 +42,18 @@ export default async function handler(req: any, res: any) {
     const secretKey = process.env.CASHFREE_SECRET_KEY;
     const environment = process.env.CASHFREE_ENVIRONMENT || 'sandbox';
 
-    // If credentials are not configured or it's a test/simulated order
-    if (!appId || !secretKey || String(orderId).includes('mock') || String(orderId).includes('simulated')) {
-      return sendJson(res, 200, {
-        success: true,
-        orderId,
-        orderStatus: 'PAID',
-        isSimulated: true,
-        message: 'Order verified successfully (sandbox/test mode).'
+    // If credentials are not configured, reject fake verification
+    if (!appId || !secretKey) {
+      return sendJson(res, 503, {
+        success: false,
+        message: 'Payment credentials are not configured for verification.'
+      });
+    }
+
+    if (String(orderId).includes('mock') || String(orderId).includes('simulated')) {
+      return sendJson(res, 400, {
+        success: false,
+        message: 'Invalid or simulated order ID rejected in live mode.'
       });
     }
 

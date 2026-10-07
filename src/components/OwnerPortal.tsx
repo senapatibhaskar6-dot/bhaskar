@@ -92,9 +92,8 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
 
     const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
     setGeneratedDemoOtp(newOtp);
-    setForgotOtp(newOtp); // Auto-fill for tester convenience
     setForgotStep('otp_reset');
-    setForgotMsg({ type: 'success', text: `6-Digit OTP sent to +91 ${clean}! (Testing OTP: ${newOtp})` });
+    setForgotMsg({ type: 'success', text: `6-Digit OTP sent to +91 ${clean}! Enter the code received below.` });
   };
 
   // Handle Forgot Password - Step 2: Verify & Reset
@@ -1165,20 +1164,6 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
                 >
                   <span className="w-2 h-2 rounded-full bg-rose-400"></span>
                   <span>Booked / Full ({bookedPropsCount})</span>
-                </button>
-
-                {/* Tester Toggle: Show all vs only matching owner */}
-                <button
-                  type="button"
-                  onClick={() => setShowAllProperties(!showAllProperties)}
-                  className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold border transition ${
-                    showAllProperties
-                      ? 'bg-amber-100 border-amber-300 text-amber-900'
-                      : 'bg-white border-slate-200 text-slate-600'
-                  }`}
-                  title="Toggle testing view to manage all listings"
-                >
-                  {showAllProperties ? 'Showing All Listings (Demo Mode)' : 'My Phone Only'}
                 </button>
               </div>
             </div>

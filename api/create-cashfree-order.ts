@@ -52,19 +52,12 @@ export default async function handler(req: any, res: any) {
     const customerId = `cust_${cleanPhone}_${Date.now().toString().slice(-4)}`;
     const email = customerEmail || `${cleanPhone}@nestfinder.in`;
 
-    // If Cashfree API credentials are not yet configured in environment variables,
-    // provide a simulated demo payment session so testing continues without crashing.
+    // Live environment check: Cashfree credentials must be present
     if (!appId || !secretKey) {
-      console.warn('CASHFREE_APP_ID or CASHFREE_SECRET_KEY not set in environment. Returning mock session.');
-      return sendJson(res, 200, {
-        success: true,
-        isSimulated: true,
-        orderId,
-        orderAmount: amount,
-        orderCurrency: 'INR',
-        paymentSessionId: `mock_session_${Date.now()}_simulated`,
-        environment: 'sandbox',
-        message: 'Order created in test mode. Set CASHFREE_APP_ID and CASHFREE_SECRET_KEY in .env for live gateway calls.'
+      console.warn('CASHFREE_APP_ID or CASHFREE_SECRET_KEY not set in live environment.');
+      return sendJson(res, 503, {
+        success: false,
+        message: 'Cashfree payment gateway credentials are not yet configured. Please pay via UPI QR code or contact NestFinder support.'
       });
     }
 
