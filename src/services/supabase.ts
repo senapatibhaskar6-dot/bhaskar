@@ -493,6 +493,60 @@ export async function fetchRemotePoliceVerifications(
   }
 }
 
+// ----------------- SUPABASE STORAGE PHOTO UPLOAD -----------------
+export async function uploadPropertyPhotoToSupabase(
+  fileOrBlob: File | Blob,
+  fileName: string,
+  config: SupabaseConfig
+): Promise<string | null> {
+  const client = getSupabaseClient(config);
+  if (!client) return null;
+
+  try {
+    const bucketName = 'property-photos';
+    const filePath = `listings/${fileName}`;
+    const contentType = (fileOrBlob as any).type || 'image/jpeg';
+
+    // 1. Try primary bucket 'property-photos'
+    const { error } = await client.storage
+      .from(bucketName)
+      .upload(filePath, fileOrBlob, {
+        cacheControl: '3600',
+        upsert: true,
+        contentType
+      });
+
+    if (!error) {
+      const { data: pubData } = client.storage.from(bucketName).getPublicUrl(filePath);
+      if (pubData?.publicUrl) return pubData.publicUrl;
+    } else {
+      console.warn(`Supabase storage bucket "${bucketName}" upload issue:`, error.message);
+    }
+
+    // 2. Fallback to 'properties' or 'public' buckets if primary isn't created
+    for (const altBucket of ['properties', 'public']) {
+      try {
+        const { error: altErr } = await client.storage
+          .from(altBucket)
+          .upload(filePath, fileOrBlob, {
+            cacheControl: '3600',
+            upsert: true,
+            contentType
+          });
+        if (!altErr) {
+          const { data: altPubData } = client.storage.from(altBucket).getPublicUrl(filePath);
+          if (altPubData?.publicUrl) return altPubData.publicUrl;
+        }
+      } catch (_) {}
+    }
+
+    return null;
+  } catch (err) {
+    console.warn('Supabase storage upload exception:', err);
+    return null;
+  }
+}
+
 export const SUPABASE_SQL_SCHEMA = `-- NestFinder Supabase Database Setup
 -- Run this SQL in your Supabase Dashboard SQL Editor (https://supabase.com/dashboard/project/_/sql)
 

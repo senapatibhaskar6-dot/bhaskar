@@ -148,6 +148,14 @@ export default function App() {
         console.error(e);
       }
     }
+    const savedOwner = localStorage.getItem('nestfinder_owner_current_account');
+    if (savedOwner && localStorage.getItem('nestfinder_owner_logged_in') === 'true') {
+      try {
+        return JSON.parse(savedOwner);
+      } catch (e) {
+        console.error(e);
+      }
+    }
     return INITIAL_USERS[0]; // Default demo logged-in user: Admin or Customer
   });
 
@@ -269,9 +277,32 @@ export default function App() {
     }
   };
 
-  // --- Sync to LocalStorage on changes ---
+  // --- Safe Sync to LocalStorage on changes ---
   useEffect(() => {
-    localStorage.setItem('nestfinder_properties', JSON.stringify(properties));
+    try {
+      localStorage.setItem('nestfinder_properties', JSON.stringify(properties));
+    } catch (err: any) {
+      if (err?.name === 'QuotaExceededError' || err?.code === 22 || err?.message?.toLowerCase().includes('quota')) {
+        console.warn('LocalStorage quota limit reached; optimizing cached property images...');
+        // Strip heavy raw base64 dataUrls from older cached items to prevent browser storage crash
+        const optimized = properties.map((p, idx) => {
+          if (idx > 2) {
+            return {
+              ...p,
+              images: p.images.map((img) =>
+                img.startsWith('data:') && img.length > 40000
+                  ? 'https://images.unsplash.com/photo-1522770179533-24471fcdba45?auto=format&fit=crop&w=800&q=80'
+                  : img
+              ) as [string, string, string, string]
+            };
+          }
+          return p;
+        });
+        try {
+          localStorage.setItem('nestfinder_properties', JSON.stringify(optimized));
+        } catch (_) {}
+      }
+    }
   }, [properties]);
 
   useEffect(() => {
@@ -763,6 +794,21 @@ export default function App() {
           onTogglePropertyStatus={handleTogglePropertyStatus}
           onAddProperty={handleAddProperty}
           onNavigateToExplore={() => setActiveTab('explore')}
+          supabaseConfig={supabaseConfig}
+          currentUser={currentUser}
+          onOwnerAuthChange={(newOwner) => {
+            setCurrentUser(newOwner);
+            setUsers((prev) => {
+              const existingIdx = prev.findIndex((u) => u.phone === newOwner.phone);
+              if (existingIdx >= 0) {
+                const next = [...prev];
+                next[existingIdx] = newOwner;
+                return next;
+              }
+              return [newOwner, ...prev];
+            });
+            localStorage.setItem('nestfinder_current_user', JSON.stringify(newOwner));
+          }}
         />
       )}
 

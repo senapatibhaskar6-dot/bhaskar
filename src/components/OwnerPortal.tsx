@@ -34,24 +34,34 @@ import {
   RefreshCw
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { Property, PropertyType, SharingType } from '../types';
+import { Property, PropertyType, SharingType, SupabaseConfig, UserProfile } from '../types';
 import { AVAILABLE_FACILITIES, SAMPLE_PHOTO_PRESETS } from '../data/initialProperties';
 import { UpiPaymentQrCard } from './UpiPaymentQrCard';
+import { uploadPropertyPhotoToSupabase } from '../services/supabase';
 
 interface OwnerPortalProps {
   properties: Property[];
   onTogglePropertyStatus: (propertyId: string, isBooked: boolean) => void;
   onAddProperty: (property: Property) => void;
   onNavigateToExplore: () => void;
+  supabaseConfig?: SupabaseConfig;
+  currentUser?: UserProfile | null;
+  onOwnerAuthChange?: (user: UserProfile) => void;
 }
 
 export const OwnerPortal: React.FC<OwnerPortalProps> = ({
   properties,
   onTogglePropertyStatus,
   onAddProperty,
-  onNavigateToExplore
+  onNavigateToExplore,
+  supabaseConfig,
+  currentUser,
+  onOwnerAuthChange
 }) => {
   // --- Owner Authentication States ---
+  const [ownerId, setOwnerId] = useState<string>(() => {
+    return localStorage.getItem('nestfinder_owner_id') || '';
+  });
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
     return localStorage.getItem('nestfinder_owner_logged_in') === 'true';
   });
@@ -150,7 +160,7 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
   const [ownerPortalTab, setOwnerPortalTab] = useState<'manage' | 'add'>('manage');
   const [statusFilter, setStatusFilter] = useState<'all' | 'available' | 'booked'>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [showAllProperties, setShowAllProperties] = useState(true);
+  const [showAllProperties, setShowAllProperties] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [previewProperty, setPreviewProperty] = useState<Property | null>(null);
   const [initialIsBooked, setInitialIsBooked] = useState(false);
@@ -199,41 +209,80 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
     e.preventDefault();
     setLoginError('');
 
-    if (!loginPhone.trim() || !loginPassword.trim()) {
+    const clean = loginPhone.trim().replace(/\D/g, '').slice(-10);
+    if (!clean || !loginPassword.trim()) {
       setLoginError('Please enter both Phone Number and Password.');
       return;
     }
 
     // Default tester credentials
     const currentDemoPass = localStorage.getItem('nestfinder_demo_owner_password') || 'admin';
-    if (loginPhone === '9876543210' && loginPassword === currentDemoPass) {
+    if (clean === '9876543210' && loginPassword === currentDemoPass) {
+      const demoId = 'owner_demo_9876543210';
+      const demoUser: UserProfile = {
+        id: demoId,
+        name: 'Bhaskar Senapati',
+        phone: clean,
+        role: 'owner',
+        registeredAt: new Date().toISOString()
+      };
+
       localStorage.setItem('nestfinder_owner_logged_in', 'true');
-      localStorage.setItem('nestfinder_owner_phone', loginPhone);
-      localStorage.setItem('nestfinder_owner_name', 'Bhaskar Senapati');
-      setOwnerName('Bhaskar Senapati');
-      setOwnerPhone(loginPhone);
-      setOwnerWhatsapp(loginPhone);
+      localStorage.setItem('nestfinder_owner_id', demoId);
+      localStorage.setItem('nestfinder_owner_phone', clean);
+      localStorage.setItem('nestfinder_owner_name', demoUser.name);
+      localStorage.setItem('nestfinder_owner_current_account', JSON.stringify(demoUser));
+      sessionStorage.setItem('nestfinder_owner_session', JSON.stringify(demoUser));
+
+      setOwnerId(demoId);
+      setOwnerName(demoUser.name);
+      setOwnerPhone(clean);
+      setOwnerWhatsapp(clean);
       setIsLoggedIn(true);
+      setShowAllProperties(false);
+      setOwnerPortalTab('manage');
+
+      onOwnerAuthChange?.(demoUser);
+      setToastMessage('Owner Portal logged in successfully.');
       return;
     }
 
     // Custom accounts stored in localStorage
     const savedAccounts = JSON.parse(localStorage.getItem('nestfinder_owner_accounts') || '[]');
-    const matched = savedAccounts.find((acc: any) => acc.phone === loginPhone && acc.password === loginPassword);
+    const matched = savedAccounts.find((acc: any) => acc.phone === clean && acc.password === loginPassword.trim());
     if (matched) {
+      const activeId = matched.id || matched.owner_id || `owner_${Date.now()}`;
+      const ownerProfile: UserProfile = {
+        id: activeId,
+        name: matched.name,
+        phone: matched.phone,
+        role: 'owner',
+        registeredAt: matched.registeredAt || new Date().toISOString()
+      };
+
       localStorage.setItem('nestfinder_owner_logged_in', 'true');
+      localStorage.setItem('nestfinder_owner_id', activeId);
       localStorage.setItem('nestfinder_owner_phone', matched.phone);
       localStorage.setItem('nestfinder_owner_name', matched.name);
+      localStorage.setItem('nestfinder_owner_current_account', JSON.stringify(ownerProfile));
+      sessionStorage.setItem('nestfinder_owner_session', JSON.stringify(ownerProfile));
+
+      setOwnerId(activeId);
       setOwnerName(matched.name);
       setOwnerPhone(matched.phone);
       setOwnerWhatsapp(matched.phone);
       setIsLoggedIn(true);
+      setShowAllProperties(false);
+      setOwnerPortalTab('manage');
+
+      onOwnerAuthChange?.(ownerProfile);
+      setToastMessage(`Welcome back, ${matched.name}!`);
     } else {
       setLoginError('Invalid Phone Number or Password. Try again or register a new account!');
     }
   };
 
-  // Handle Register submission
+  // Handle Register submission - Clean session, unique owner_id & route directly to Add Property
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
@@ -243,35 +292,97 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
       return;
     }
 
-    const savedAccounts = JSON.parse(localStorage.getItem('nestfinder_owner_accounts') || '[]');
-    if (savedAccounts.some((acc: any) => acc.phone === registerPhone)) {
-      setLoginError('An owner with this phone number is already registered.');
+    const clean = registerPhone.trim().replace(/\D/g, '').slice(-10);
+    if (clean.length < 10) {
+      setLoginError('Please enter a valid 10-digit phone number.');
       return;
     }
 
+    const savedAccounts = JSON.parse(localStorage.getItem('nestfinder_owner_accounts') || '[]');
+    if (savedAccounts.some((acc: any) => acc.phone === clean)) {
+      setLoginError('An owner with this phone number is already registered. Please log in.');
+      return;
+    }
+
+    // Generate unique owner_id
+    const generatedOwnerId = `owner_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
     const newAccount = {
+      id: generatedOwnerId,
+      owner_id: generatedOwnerId,
       name: registerName.trim(),
-      phone: registerPhone.trim(),
-      password: registerPassword.trim()
+      phone: clean,
+      password: registerPassword.trim(),
+      registeredAt: new Date().toISOString()
     };
     savedAccounts.push(newAccount);
     localStorage.setItem('nestfinder_owner_accounts', JSON.stringify(savedAccounts));
 
-    // Auto-login after registration
+    // Clear any stale cached draft inputs from any previous owner sessions
+    setTitle('');
+    setCity('');
+    setLandmark('');
+    setAddress('');
+    setMonthlyRent('');
+    setSecurityDeposit('');
+    setDescription('');
+    setFormError('');
+    setPhotoUploadError('');
+    setPhotoUploadSuccess('');
+    setPhotoMeta({});
+    setPhotos([
+      SAMPLE_PHOTO_PRESETS[0].url,
+      SAMPLE_PHOTO_PRESETS[1].url,
+      SAMPLE_PHOTO_PRESETS[2].url,
+      SAMPLE_PHOTO_PRESETS[3].url
+    ]);
+
+    const ownerProfile: UserProfile = {
+      id: generatedOwnerId,
+      name: newAccount.name,
+      phone: newAccount.phone,
+      role: 'owner',
+      registeredAt: newAccount.registeredAt
+    };
+
+    // Auto-login after registration with clean state
     localStorage.setItem('nestfinder_owner_logged_in', 'true');
+    localStorage.setItem('nestfinder_owner_id', generatedOwnerId);
     localStorage.setItem('nestfinder_owner_phone', newAccount.phone);
     localStorage.setItem('nestfinder_owner_name', newAccount.name);
+    localStorage.setItem('nestfinder_owner_current_account', JSON.stringify(ownerProfile));
+    sessionStorage.setItem('nestfinder_owner_session', JSON.stringify(ownerProfile));
+
+    setOwnerId(generatedOwnerId);
     setOwnerName(newAccount.name);
     setOwnerPhone(newAccount.phone);
     setOwnerWhatsapp(newAccount.phone);
     setIsLoggedIn(true);
+    setShowAllProperties(false);
+    // Route fresh registered owner directly to "+ List New Property" so they can add photos
+    setOwnerPortalTab('add');
+
+    onOwnerAuthChange?.(ownerProfile);
+
+    try {
+      confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } });
+    } catch (_) {}
+
+    setToastMessage(`Registration successful! Welcome, ${newAccount.name}. Upload your property photos and list your property below.`);
   };
 
   const handleLogout = () => {
     localStorage.removeItem('nestfinder_owner_logged_in');
+    localStorage.removeItem('nestfinder_owner_id');
     localStorage.removeItem('nestfinder_owner_phone');
     localStorage.removeItem('nestfinder_owner_name');
+    localStorage.removeItem('nestfinder_owner_current_account');
+    sessionStorage.removeItem('nestfinder_owner_session');
     setIsLoggedIn(false);
+    setOwnerId('');
+    setOwnerName('');
+    setOwnerPhone('');
+    setOwnerWhatsapp('');
   };
   const [description, setDescription] = useState('');
   const [genderRestriction, setGenderRestriction] = useState<'Male only' | 'Female only' | 'Any / Family'>('Male only');
@@ -305,18 +416,21 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
   const [photoMeta, setPhotoMeta] = useState<{ [key: number]: { name: string; size: string } }>({});
 
   // Client-side image resizing and compression for camera photos (often 8MB - 25MB on modern phones)
-  const compressImage = (file: File): Promise<{ dataUrl: string; size: string; name: string }> => {
+  const compressImage = (
+    file: File
+  ): Promise<{ blob: Blob; dataUrl: string; size: string; name: string }> => {
     return new Promise((resolve, reject) => {
       const img = new Image();
       const reader = new FileReader();
 
-      reader.onerror = () => reject(new Error('Failed to read file from camera.'));
+      reader.onerror = () => reject(new Error('Failed to read photo file from device.'));
       reader.onload = (e) => {
-        img.onerror = () => reject(new Error('Invalid image data.'));
+        img.onerror = () => reject(new Error('Invalid image file format.'));
         img.onload = () => {
           try {
             const canvas = document.createElement('canvas');
-            const MAX_DIM = 1600; // Optimal 1600px dimension preserves full HD detail while keeping file under ~400KB
+            // Optimal 1200px max dimension: crisp HD detail while keeping file under ~40-60KB
+            const MAX_DIM = 1200;
             let width = img.naturalWidth || img.width;
             let height = img.naturalHeight || img.height;
 
@@ -334,37 +448,47 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
             canvas.height = height;
             const ctx = canvas.getContext('2d');
             if (!ctx) {
-              // Fallback to original reader result if canvas not supported
+              const directData = e.target?.result as string;
               resolve({
-                dataUrl: e.target?.result as string,
-                size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+                blob: file,
+                dataUrl: directData,
+                size: `${(file.size / 1024).toFixed(0)} KB`,
                 name: file.name
               });
               return;
             }
 
-            // Draw image with smoothing
+            // Draw image with high quality smoothing
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = 'high';
             ctx.drawImage(img, 0, 0, width, height);
 
-            // Compress to standard JPEG at 0.82 quality
-            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
-            // Calculate approximate size
-            const head = 'data:image/jpeg;base64,';
-            const approxBytes = Math.round(((compressedDataUrl.length - head.length) * 3) / 4);
-            const formattedSize = approxBytes < 1024 * 1024
-              ? `${Math.round(approxBytes / 1024)} KB`
-              : `${(approxBytes / (1024 * 1024)).toFixed(1)} MB`;
+            // Compress to standard JPEG at 0.75 quality for rapid upload and minimal memory footprint
+            const quality = 0.75;
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
 
-            resolve({
-              dataUrl: compressedDataUrl,
-              size: formattedSize,
-              name: file.name.replace(/\.[^/.]+$/, "") + '.jpg'
-            });
+            canvas.toBlob(
+              (blob) => {
+                const finalBlob = blob || file;
+                const approxBytes = finalBlob.size || Math.round((compressedDataUrl.length * 3) / 4);
+                const formattedSize =
+                  approxBytes < 1024 * 1024
+                    ? `${Math.round(approxBytes / 1024)} KB`
+                    : `${(approxBytes / (1024 * 1024)).toFixed(1)} MB`;
+
+                resolve({
+                  blob: finalBlob,
+                  dataUrl: compressedDataUrl,
+                  size: formattedSize,
+                  name: file.name.replace(/\.[^/.]+$/, '') + '.jpg'
+                });
+              },
+              'image/jpeg',
+              quality
+            );
           } catch (err) {
-            // If canvas fails, fallback to direct dataUrl
             resolve({
+              blob: file,
               dataUrl: e.target?.result as string,
               size: `${(file.size / 1024).toFixed(0)} KB`,
               name: file.name
@@ -397,22 +521,43 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
         return false;
       }
 
-      // 2. Compress image automatically so even 15MB-25MB camera shots load instantly
+      // Max file size check (25MB limit on raw camera input)
+      if (file.size > 25 * 1024 * 1024) {
+        setPhotoUploadError(`File is too large (${(file.size / (1024 * 1024)).toFixed(1)}MB). Please choose a photo under 25MB.`);
+        setIsProcessingPhoto(false);
+        return false;
+      }
+
+      // 2. Client-side compression & blob creation
       const processed = await compressImage(file);
+
+      // 3. Attempt Supabase Storage Upload if connected
+      let finalPhotoUrl = processed.dataUrl;
+      let storageNote = processed.size;
+
+      if (supabaseConfig && supabaseConfig.isConnected && supabaseConfig.url && supabaseConfig.anonKey) {
+        const activeOwner = ownerId || localStorage.getItem('nestfinder_owner_id') || 'owner';
+        const uniqueFileName = `${activeOwner}_${Date.now()}_img${index + 1}.jpg`;
+        const cloudUrl = await uploadPropertyPhotoToSupabase(processed.blob, uniqueFileName, supabaseConfig);
+        if (cloudUrl) {
+          finalPhotoUrl = cloudUrl;
+          storageNote = 'Supabase Cloud Storage ✓';
+        }
+      }
 
       setPhotos((prev) => {
         const next = [...prev] as [string, string, string, string];
-        next[index] = processed.dataUrl;
+        next[index] = finalPhotoUrl;
         return next;
       });
 
       setPhotoMeta((prev) => ({
         ...prev,
-        [index]: { name: processed.name, size: processed.size }
+        [index]: { name: processed.name, size: storageNote }
       }));
 
       setPhotoUploadSuccess(
-        `Photo ${index + 1} captured & processed successfully (${processed.size})!`
+        `Photo ${index + 1} uploaded & optimized successfully (${storageNote})!`
       );
       setActivePickerIndex(null);
 
@@ -936,8 +1081,8 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
 
   const ownerMatchedProps = properties.filter((p) => {
     if (showAllProperties) return true;
-    const propPhone = p.ownerPhone.replace(/\D/g, '').slice(-10);
-    return propPhone === currentCleanPhone || currentCleanPhone === '9876543210';
+    const propPhone = (p.ownerPhone || '').replace(/\D/g, '').slice(-10);
+    return Boolean(propPhone && currentCleanPhone && propPhone === currentCleanPhone);
   });
 
   const filteredOwnerProps = ownerMatchedProps.filter((p) => {
@@ -1022,14 +1167,29 @@ export const OwnerPortal: React.FC<OwnerPortalProps> = ({
             </button>
           </div>
 
-          <button
-            type="button"
-            onClick={onNavigateToExplore}
-            className="text-xs font-bold text-slate-600 hover:text-slate-900 flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-slate-200/80 transition"
-          >
-            <ExternalLink className="w-3.5 h-3.5" />
-            <span>View Public Explore Feed</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowAllProperties(!showAllProperties)}
+              className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition flex items-center gap-1.5 ${
+                showAllProperties
+                  ? 'bg-purple-100 border-purple-300 text-purple-800'
+                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+              }`}
+              title="Toggle between viewing only your properties vs all platform listings"
+            >
+              <span>{showAllProperties ? '🌐 All Listings Mode' : '👤 My Properties Only'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={onNavigateToExplore}
+              className="text-xs font-bold text-slate-600 hover:text-slate-900 flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-slate-200/80 transition"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>Explore Feed</span>
+            </button>
+          </div>
         </div>
 
         {/* Toast Notification Banner */}
