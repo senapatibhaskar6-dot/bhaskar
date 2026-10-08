@@ -67,12 +67,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight mb-2 text-white leading-snug drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
           Find Your Ideal{' '}
           <span className="text-[#FFE57F] drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
-            PG, Hostel or Rental Flat
+            PG, Hostel, Rental Flat & Private Job
           </span>
         </h1>
 
         <p className="text-white text-xs sm:text-sm max-w-xl mx-auto mb-4 font-bold drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)]">
-          Explore verified student hostels, single/double sharing PGs, and family apartments.
+          Explore verified student hostels, single/double sharing PGs, rental flats & Private Jobs.
           Instant direct owner contacts and exact addresses unlocked with the ₹49 Tenant Pass.
         </p>
 
@@ -91,7 +91,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               className="py-2.5 sm:py-3 px-5 sm:px-6 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-black shadow-lg shadow-indigo-600/30 transition flex items-center gap-2 cursor-pointer"
             >
               <Briefcase className="w-4 h-4 text-amber-300" />
-              <span>Find Jobs (🟢 Available)</span>
+              <span>Find Private Jobs (🟢 Available)</span>
             </button>
           )}
         </div>
